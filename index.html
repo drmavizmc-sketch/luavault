@@ -1,0 +1,2819 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LuaVault — Game Lua Script Library</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;1,400;1,600&family=Outfit:wght@200;300;400;600;800&family=Syne:wght@400;700;800&family=Orbitron:wght@500;800;900&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- GSAP & ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Firebase SDKs for Cross-Browser Cloud Syncing -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            black: '#030305',
+            darkGrey: '#0A0A0F',
+            accentPurple: '#A855F7',
+            accentViolet: '#7C3AED',
+            glowCyan: '#06B6D4',
+            metallic: '#E2E8F0',
+          },
+          fontFamily: {
+            syne: ['Syne', 'sans-serif'],
+            cormorant: ['Cormorant Garamond', 'serif'],
+            outfit: ['Outfit', 'sans-serif'],
+            orbitron: ['Orbitron', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Hardware Accelerated Smooth Scroll Fixes */
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      overscroll-behavior-y: none;
+    }
+
+    body {
+      background-color: #030305;
+      color: #E2E8F0;
+      overflow-x: hidden;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    /* Desktop-only custom cursor hide base pointer */
+    @media (pointer: fine) and (min-width: 768px) {
+      body, a, button, [role="button"], input, textarea, select {
+        cursor: none !important;
+      }
+    }
+
+    /* FUTURISTIC CYBERNETIC HUD CURSOR SYSTEM */
+    #futuristic-cursor {
+      pointer-events: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 10000;
+      overflow: hidden;
+    }
+
+    .hud-element {
+      position: fixed;
+      pointer-events: none;
+      transform: translate3d(-50%, -50%, 0);
+      will-change: transform, width, height, opacity;
+    }
+
+    /* Central Precision Core */
+    .cursor-core-dot {
+      width: 6px;
+      height: 6px;
+      background: #06B6D4;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #06B6D4, 0 0 20px #06B6D4, 0 0 30px #A855F7;
+      z-index: 10005;
+      transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+
+    /* Inner Rotating Reticle Grid */
+    .cursor-reticle-ring {
+      width: 44px;
+      height: 44px;
+      border: 1.5px dashed rgba(6, 182, 212, 0.6);
+      border-radius: 50%;
+      z-index: 10002;
+      animation: rotateClockwise 12s linear infinite;
+      transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), height 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s;
+    }
+
+    /* Outer Target Crosshair Brackets */
+    .cursor-bracket-container {
+      width: 70px;
+      height: 70px;
+      z-index: 10001;
+      transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1), height 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+      animation: rotateCounterClockwise 20s linear infinite;
+    }
+
+    .cursor-bracket {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-color: rgba(168, 85, 247, 0.8);
+      border-style: solid;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+    .bracket-tl { top: 0; left: 0; border-width: 2px 0 0 2px; }
+    .bracket-tr { top: 0; right: 0; border-width: 2px 2px 0 0; }
+    .bracket-bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
+    .bracket-br { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
+
+    /* Futuristic HUD Coordinates Tag */
+    .cursor-hud-data {
+      position: fixed;
+      pointer-events: none;
+      font-family: 'Orbitron', monospace;
+      font-size: 8px;
+      font-weight: 700;
+      color: rgba(6, 182, 212, 0.85);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      background: rgba(3, 3, 5, 0.75);
+      padding: 2px 6px;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      border-radius: 4px;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+      z-index: 10004;
+      transform: translate3d(24px, 24px, 0);
+      transition: border-color 0.3s, color 0.3s;
+    }
+
+    /* Particle Trail Canvas for Motion Vector Effect */
+    #cursor-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 10000;
+    }
+
+    /* HOVER INTERACTION STATES FOR CURSOR */
+    body.cursor-hover .cursor-core-dot {
+      background: #A855F7;
+      transform: translate3d(-50%, -50%, 0) scale(1.8);
+      box-shadow: 0 0 15px #A855F7, 0 0 30px #A855F7, 0 0 45px #06B6D4;
+    }
+
+    body.cursor-hover .cursor-reticle-ring {
+      width: 64px;
+      height: 64px;
+      border-color: rgba(168, 85, 247, 0.9);
+      border-style: solid;
+      animation-duration: 4s;
+    }
+
+    body.cursor-hover .cursor-bracket-container {
+      width: 86px;
+      height: 86px;
+    }
+
+    body.cursor-hover .cursor-bracket {
+      border-color: #06B6D4;
+    }
+
+    body.cursor-hover .cursor-hud-data {
+      color: #A855F7;
+      border-color: rgba(168, 85, 247, 0.6);
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+    }
+
+    /* CLICK DOWN ANIMATION STATE */
+    body.cursor-active .cursor-core-dot {
+      transform: translate3d(-50%, -50%, 0) scale(0.6);
+    }
+    body.cursor-active .cursor-reticle-ring {
+      width: 32px;
+      height: 32px;
+      border-color: #38BDF8;
+    }
+
+    @keyframes rotateClockwise {
+      0% { transform: translate3d(-50%, -50%, 0) rotate(0deg); }
+      100% { transform: translate3d(-50%, -50%, 0) rotate(360deg); }
+    }
+
+    @keyframes rotateCounterClockwise {
+      0% { transform: translate3d(-50%, -50%, 0) rotate(0deg); }
+      100% { transform: translate3d(-50%, -50%, 0) rotate(-360deg); }
+    }
+
+    /* Magnetic Text Elements Smoothing */
+    .mag-text {
+      display: inline-block;
+      will-change: transform;
+      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* Hardware Accelerated Glassmorphism Cards */
+    .glass-card {
+      background: rgba(15, 15, 22, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      will-change: transform, border-color;
+      transform: translateZ(0);
+      backface-visibility: hidden;
+    }
+    .glass-card:hover {
+      border-color: rgba(168, 85, 247, 0.4);
+      box-shadow: 0 0 30px rgba(168, 85, 247, 0.25);
+    }
+
+    /* Metallic Glowing Text */
+    .text-metallic {
+      background: linear-gradient(135deg, #FFFFFF 0%, #A0AEC0 50%, #4A5568 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Ambient Grain Texture */
+    .noise-bg {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.025'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    /* Hide scrollbars smoothly */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(3, 3, 5, 0.8); }
+    ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.3); border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(168, 85, 247, 0.6); }
+
+    /* Canvas Background Positioning */
+    #webgl-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 10;
+      pointer-events: none;
+      will-change: transform;
+      transform: translateZ(0);
+    }
+
+    /* Copy Toast */
+    #copy-toast {
+      transform: translate3d(-50%, 100px, 0);
+      opacity: 0;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+      will-change: transform, opacity;
+    }
+    #copy-toast.show {
+      transform: translate3d(-50%, 0, 0);
+      opacity: 1;
+    }
+
+    /* Gallery Card Image Scaling */
+    .gallery-img-container img {
+      transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), filter 0.4s ease;
+      will-change: transform;
+      backface-visibility: hidden;
+    }
+    .gallery-card:hover .gallery-img-container img {
+      transform: scale(1.06) translateZ(0);
+      filter: brightness(1.1);
+    }
+
+    /* Pulse Glow Animation */
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 25px rgba(168, 85, 247, 0.4); }
+      50% { box-shadow: 0 0 45px rgba(168, 85, 247, 0.8); }
+    }
+    .pulse-glow-anim {
+      animation: pulseGlow 3s infinite ease-in-out;
+    }
+  
+    /* LIQUID GLASS (hero connect) */
+    .liquid-glass-btn{position:relative;overflow:hidden;isolation:isolate;cursor:pointer;
+      background:linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,.04) 45%,rgba(255,255,255,.12));
+      -webkit-backdrop-filter:blur(18px) saturate(1.8);backdrop-filter:blur(18px) saturate(1.8);
+      border:1px solid rgba(255,255,255,.30);
+      box-shadow:inset 0 1px 1px rgba(255,255,255,.6),inset 0 -12px 26px rgba(168,85,247,.20),inset 0 0 24px rgba(255,255,255,.06),0 18px 50px rgba(0,0,0,.45),0 0 44px rgba(6,182,212,.20);
+      text-shadow:0 1px 14px rgba(0,0,0,.45);
+      transition:transform .35s cubic-bezier(.16,1,.3,1),box-shadow .35s,background .35s}
+    .liquid-glass-btn::before{content:"";position:absolute;inset:1px 1px 52% 1px;border-radius:inherit;
+      background:linear-gradient(180deg,rgba(255,255,255,.40),rgba(255,255,255,0));opacity:.55;pointer-events:none;z-index:-1}
+    .liquid-glass-btn::after{content:"";position:absolute;top:-60%;left:-40%;width:45%;height:220%;
+      background:linear-gradient(100deg,transparent,rgba(255,255,255,.38),transparent);
+      transform:translateX(-120%) rotate(12deg);transition:transform .9s cubic-bezier(.16,1,.3,1);pointer-events:none;z-index:-1}
+    .liquid-glass-btn:hover::after{transform:translateX(420%) rotate(12deg)}
+    .liquid-glass-btn:hover{transform:scale(1.04);
+      box-shadow:inset 0 1px 1px rgba(255,255,255,.75),inset 0 -12px 30px rgba(6,182,212,.28),inset 0 0 28px rgba(255,255,255,.10),0 22px 60px rgba(0,0,0,.5),0 0 70px rgba(168,85,247,.38)}
+    .liquid-glass-btn:active{transform:scale(.97)}
+    .liquid-glass-btn.is-busy{opacity:.8}
+    .liquid-panel{background:linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.03));
+      -webkit-backdrop-filter:blur(16px) saturate(1.6);backdrop-filter:blur(16px) saturate(1.6);
+      border:1px solid rgba(255,255,255,.22);box-shadow:inset 0 1px 1px rgba(255,255,255,.4),0 14px 40px rgba(0,0,0,.4)}
+    @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+      .liquid-glass-btn,.liquid-panel{background:rgba(20,20,30,.7)}
+    }
+
+    /* Prevent page scrolling while the cloud connection is being established. */
+    html.lua-connect-lock, body.lua-connect-lock { overflow: hidden !important; overscroll-behavior: none; }
+</style>
+</head>
+<body class="selection:bg-accentPurple selection:text-white">
+
+  <!-- Toast Notification -->
+  <div id="copy-toast" class="fixed bottom-8 left-1/2 z-[100] px-6 py-3 rounded-full glass-card border border-accentPurple/50 bg-black/90 text-white text-xs font-semibold uppercase tracking-widest flex items-center gap-3 shadow-[0_0_25px_rgba(168,85,247,0.4)]">
+    <i class="fas fa-check-circle text-accentPurple text-base"></i>
+    <span id="toast-message">Ready</span>
+  </div>
+
+  <!-- FUTURISTIC HUD CURSOR OVERLAY (Desktop Only) -->
+  <div id="futuristic-cursor" class="hidden md:block">
+    <canvas id="cursor-canvas"></canvas>
+    <div class="hud-element cursor-core-dot" id="cursor-core"></div>
+    <div class="hud-element cursor-reticle-ring" id="cursor-reticle"></div>
+    <div class="hud-element cursor-bracket-container" id="cursor-brackets">
+      <div class="cursor-bracket bracket-tl"></div>
+      <div class="cursor-bracket bracket-tr"></div>
+      <div class="cursor-bracket bracket-bl"></div>
+      <div class="cursor-bracket bracket-br"></div>
+    </div>
+    <div class="cursor-hud-data" id="cursor-hud">X: 0 | Y: 0</div>
+  </div>
+
+  <!-- Ambient Grain Overlay -->
+  <div class="noise-bg"></div>
+
+  <!-- Background Glowing Orbs -->
+  <div class="fixed top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accentPurple/10 blur-[140px] rounded-full pointer-events-none z-0"></div>
+  <div class="fixed bottom-10 right-10 w-[350px] h-[350px] bg-accentViolet/15 blur-[110px] rounded-full pointer-events-none z-0"></div>
+
+  <!-- WebGL 3D Canvas Container -->
+  <div id="webgl-container"></div>
+
+  <!-- Navigation Bar -->
+  <header class="fixed top-0 left-0 w-full z-50 px-6 py-6 transition-all duration-300" id="navbar">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <!-- Logo -->
+      <a href="#" class="group flex items-center gap-3 text-white font-syne font-extrabold text-xl tracking-widest uppercase hover:text-accentPurple transition-colors duration-300">
+        <span class="w-8 h-8 rounded-full border border-accentPurple/50 flex items-center justify-center bg-black/40 group-hover:scale-110 transition-transform duration-300 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+          <svg class="w-4 h-4 text-accentPurple" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+        </span>
+        <span class="mag-text">LuaVault</span>
+      </a>
+
+      <!-- Desktop Nav Menu -->
+      <nav class="hidden md:flex items-center gap-8 px-8 py-2.5 rounded-full glass-card border border-white/10">
+        <a href="#hero" class="text-xs uppercase tracking-widest text-gray-400 hover:text-white transition-colors duration-300 relative mag-text">Home</a>
+        <a href="#about" class="text-xs uppercase tracking-widest text-gray-400 hover:text-white transition-colors duration-300 relative mag-text">About</a>
+        <a href="#servers" class="text-xs uppercase tracking-widest text-gray-400 hover:text-white transition-colors duration-300 relative mag-text">Upload</a>
+        <a href="#myth" class="text-xs uppercase tracking-widest text-gray-400 hover:text-white transition-colors duration-300 relative mag-text">Features</a>
+        <button onclick="goToPulse()" class="text-xs uppercase tracking-widest text-accentPurple hover:text-white transition-colors duration-300 flex items-center gap-1.5 font-bold mag-text">
+          <i class="fas fa-sparkles"></i> Library
+        </button>
+      </nav>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-4">
+        <!-- Cloud Storage Modal Trigger Button -->
+        <button onclick="openCloudModal()" style="display:none" aria-hidden="true" tabindex="-1" class="px-3.5 py-2 rounded-full border border-glowCyan/40 bg-black/40 hover:border-glowCyan text-glowCyan hover:text-white text-[11px] font-mono tracking-wider uppercase transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-1.5 mag-text" title="Cloud Storage Settings">
+          <i class="fas fa-cloud text-xs"></i>
+          <span>Cloud Storage</span>
+        </button>
+
+        <!-- Audio Synth Toggle Button -->
+        <button id="sound-btn" class="relative group p-3 rounded-full border border-white/10 bg-black/40 hover:border-accentPurple/50 transition-all duration-300 hover:scale-105 active:scale-95" title="Toggle Ambient Audio">
+          <svg id="sound-icon-off" class="w-4 h-4 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+          </svg>
+          <svg id="sound-icon-on" class="w-4 h-4 text-accentPurple hidden animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+          </svg>
+        </button>
+
+        <!-- CTA Button -->
+        <a href="#servers" class="px-6 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-gradient-to-r from-accentPurple to-accentViolet text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:shadow-[0_0_30px_rgba(168,85,247,0.8)] transition-all duration-300 hover:scale-105 active:scale-95 mag-text">
+          Upload Lua
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="relative z-20">
+
+    <!-- HERO SECTION -->
+    <section id="hero" class="relative min-h-screen flex flex-col justify-between items-center px-6 pt-32 pb-16">
+      
+      <!-- Top Tagline -->
+      <div class="text-center z-20 space-y-2 opacity-0 hero-fade">
+        <p class="text-xs uppercase tracking-[0.4em] text-accentPurple font-semibold mag-text">Game Lua Script Library</p>
+        <p class="text-gray-400 text-sm font-light italic font-cormorant mag-text">Upload a script. AI reads it, builds the poster, shelves it in your library.</p>
+      </div>
+
+      <!-- Center Typography -->
+      <div class="w-full max-w-7xl mx-auto flex flex-col items-center justify-center my-auto z-20">
+        <h1 class="text-5xl sm:text-8xl md:text-[11rem] font-extrabold font-syne tracking-tighter leading-none text-center text-metallic hero-title opacity-0 mag-text cursor-default select-none">
+          LuaVault
+        </h1>
+        <p class="mt-6 text-sm sm:text-xl font-light tracking-[0.3em] uppercase text-gray-300 text-center hero-subtitle opacity-0 mag-text">
+          AI-ANALYSED LUA DOWNLOADS
+        </p>
+        <div class="mt-12 flex flex-col items-center gap-4 relative z-50 w-full" style="pointer-events:auto">
+          <button id="hero-connect-btn" type="button" onclick="heroConnect(false)" class="liquid-glass-btn group flex items-center gap-4 px-12 sm:px-20 py-5 sm:py-7 rounded-full text-white font-syne font-extrabold text-lg sm:text-2xl uppercase tracking-[0.25em] active:scale-95">
+            <i id="hero-connect-icon" class="fas fa-cloud-arrow-up"></i>
+            <span id="hero-connect-label">Connect</span>
+          </button>
+          <p id="hero-connect-status" class="text-xs sm:text-sm font-mono text-gray-300 text-center min-h-[1.25rem] max-w-2xl"></p>
+
+          <!-- Manual connect (shown only when automatic connect fails) -->
+          <div id="hero-manual" class="hidden liquid-panel w-full max-w-md rounded-3xl p-5 space-y-3">
+            <p class="text-xs text-gray-100 text-center">Could not connect automatically. Connect manually:</p>
+            <button type="button" onclick="copyAutoToken()" class="w-full py-3 rounded-xl border border-white/25 text-gray-100 hover:text-white hover:border-glowCyan text-xs uppercase font-bold tracking-wider transition-colors"><i class="fas fa-copy mr-2"></i>Copy token</button>
+            <p class="text-[11px] text-gray-300 text-center">Copy the token, then paste it below.</p>
+            <div class="flex items-center gap-2">
+              <input type="password" id="hero-manual-token" placeholder="Paste GitHub token (ghp_...)" autocomplete="off" spellcheck="false" class="flex-1 min-w-0 px-4 py-3 rounded-xl bg-black/40 border border-white/20 text-white text-sm focus:outline-none focus:border-glowCyan transition-colors">
+              <button type="button" onclick="pasteInto('hero-manual-token')" class="px-4 py-3 rounded-xl border border-white/25 text-gray-100 hover:text-white hover:border-glowCyan text-xs uppercase font-bold tracking-wider transition-colors">Paste</button>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="heroManualConnect()" class="liquid-glass-btn flex-1 py-3 rounded-xl text-white text-xs uppercase font-bold tracking-wider">Connect manually</button>
+              <button type="button" onclick="heroConnect(false)" class="px-4 py-3 rounded-xl border border-white/25 text-gray-100 hover:text-white hover:border-glowCyan text-xs uppercase font-bold tracking-wider transition-colors">Retry</button>
+            </div>
+            <div class="border-t border-white/15 pt-3 space-y-2">
+              <p class="text-[11px] text-gray-300 text-center">Cannot reach GitHub? Move your library by file instead:</p>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="gExport()" class="flex-1 py-2.5 rounded-xl border border-white/25 text-gray-100 hover:text-white hover:border-glowCyan text-[11px] uppercase font-bold tracking-wider transition-colors">Export backup</button>
+                <button type="button" onclick="gImport()" class="flex-1 py-2.5 rounded-xl border border-white/25 text-gray-100 hover:text-white hover:border-glowCyan text-[11px] uppercase font-bold tracking-wider transition-colors">Import backup</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <!-- Bottom Interactive Bar -->
+      <div class="w-full max-w-7xl mx-auto flex items-end justify-between z-20 opacity-0 hero-fade">
+        <div class="hidden sm:flex flex-col gap-1 text-xs text-gray-400 font-mono">
+          <button onclick="openUpload()" class="text-left text-accentPurple hover:underline cursor-pointer flex items-center gap-1.5 transition-all hover:text-white mag-text">
+            <span>[ UPLOAD ] Drop a .lua for AI analysis</span>
+            <i class="fas fa-copy text-[10px] opacity-70"></i>
+          </button>
+          <button onclick="goToPulse()" class="text-left hover:underline cursor-pointer flex items-center gap-1.5 transition-all hover:text-white mag-text">
+            <span>[ LIBRARY ] Open your script library</span>
+            <i class="fas fa-copy text-[10px] opacity-70"></i>
+          </button>
+        </div>
+
+        <!-- Scroll Indicator -->
+        <div class="flex flex-col items-center gap-2 mx-auto sm:mx-0">
+          <span class="text-[10px] uppercase tracking-[0.3em] text-gray-400 mag-text">Scroll to Explore</span>
+          <div class="w-5 h-9 rounded-full border border-white/20 flex justify-center p-1 bg-black/30 backdrop-blur-sm">
+            <div class="w-1 h-2 bg-accentPurple rounded-full animate-bounce mt-1"></div>
+          </div>
+        </div>
+
+        <div class="hidden sm:block text-right text-xs text-gray-400 font-mono">
+          <span id="fps-counter" class="text-emerald-400">60 FPS</span> • Smooth WebGL
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT SECTION -->
+    <section id="about" class="min-h-screen flex items-center justify-center px-6 py-32 relative">
+      <div class="max-w-5xl mx-auto space-y-12 z-20">
+        
+        <div class="space-y-4">
+          <span class="text-xs uppercase tracking-[0.5em] text-accentPurple font-bold mag-text">// HOW IT STARTED</span>
+          <h2 class="text-3xl sm:text-5xl md:text-6xl font-syne font-bold leading-tight text-white reveal-text mag-text">
+            LuaVault IS A SCRIPT LIBRARY AT THE INTERSECTION OF <span class="text-transparent bg-clip-text bg-gradient-to-r from-accentPurple via-fuchsia-400 to-cyan-400">AI & AUTOMATION</span>.
+          </h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 text-gray-400 font-light text-lg leading-relaxed pt-6">
+          <p class="reveal-text mag-text">
+            Built for scripters and players. Drop in any game Lua file and it is read, understood, labelled and stored in one tidy place.
+          </p>
+          <p class="reveal-text mag-text">
+            Every upload gets an AI summary, a safety check, an auto-generated poster and a one-click download, kept on your own device.
+          </p>
+        </div>
+
+        <!-- Stats Counters -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-12 border-t border-white/10">
+          <div class="glass-card p-6 rounded-2xl text-center space-y-1">
+            <div class="text-4xl font-extrabold text-white font-syne counter mag-text" data-target="24">0</div>
+            <div class="text-xs text-gray-400 uppercase tracking-widest mag-text">Poster Styles</div>
+          </div>
+          <div class="glass-card p-6 rounded-2xl text-center space-y-1">
+            <div class="text-4xl font-extrabold text-white font-syne counter mag-text" data-target="500">+0</div>
+            <div class="text-xs text-gray-400 uppercase tracking-widest mag-text">Scripts Supported</div>
+          </div>
+          <div class="glass-card p-6 rounded-2xl text-center space-y-1">
+            <div class="text-4xl font-extrabold text-white font-syne counter mag-text" data-target="3">0</div>
+            <div class="text-xs text-gray-400 uppercase tracking-widest mag-text">Steps Automated</div>
+          </div>
+          <div class="glass-card p-6 rounded-2xl text-center space-y-1">
+            <div class="text-4xl font-extrabold text-accentPurple font-syne mag-text">100%</div>
+            <div class="text-xs text-gray-400 uppercase tracking-widest mag-text">Cloud Synced</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SERVER EDITIONS SECTION -->
+    <section id="servers" class="px-6 py-20 relative">
+      <div class="max-w-7xl mx-auto space-y-12">
+        <div class="text-center space-y-4">
+          <span class="text-xs uppercase tracking-[0.5em] text-accentPurple font-bold mag-text">// AUTO IMPORT</span>
+          <h2 class="text-4xl sm:text-6xl font-syne font-extrabold text-white mag-text">UPLOAD YOUR LUA</h2>
+          <p class="text-gray-400 text-sm max-w-xl mx-auto mag-text">Pick or drop .lua files on the first card. AI analyses each one, makes a poster and adds it to your library.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          
+          <!-- Java Server Card -->
+          <div onclick="openUpload()" class="glass-card rounded-3xl p-8 relative overflow-hidden group cursor-pointer tilt-card transition-all duration-300 border border-white/10 hover:border-accentPurple">
+            <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-accentPurple/20 rounded-full blur-3xl group-hover:bg-accentPurple/40 transition-colors"></div>
+            <div class="flex justify-between items-start mb-6">
+              <span class="px-3 py-1 text-[10px] uppercase font-bold tracking-widest bg-accentPurple/20 text-accentPurple rounded-full border border-accentPurple/30 mag-text">UPLOAD</span>
+              <span class="text-xs font-mono text-gray-400 font-bold mag-text">.lua / .luau / .txt</span>
+            </div>
+            <div class="space-y-4">
+              <h3 class="text-3xl font-syne font-bold text-white group-hover:text-accentPurple transition-colors flex items-center gap-3 mag-text">
+                Drop your .lua
+                <i class="fas fa-copy text-lg opacity-40 group-hover:opacity-100 group-hover:scale-110 transition-all"></i>
+              </h3>
+              <p class="text-gray-400 text-sm font-light mag-text">Pick or drag in one or many Lua files. Analysis, poster and library entry happen automatically.</p>
+            </div>
+            <div class="mt-8 pt-6 border-t border-white/10 flex items-center justify-between text-xs font-semibold text-accentPurple tracking-widest uppercase">
+              <span class="mag-text">Click to Upload & Analyse</span>
+              <i class="fas fa-arrow-right group-hover:translate-x-2 transition-transform"></i>
+            </div>
+          </div>
+
+          <!-- Bedrock Server Card -->
+          <div onclick="goToPulse()" class="glass-card rounded-3xl p-8 relative overflow-hidden group cursor-pointer tilt-card transition-all duration-300 border border-white/10 hover:border-cyan-400">
+            <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl group-hover:bg-cyan-500/40 transition-colors"></div>
+            <div class="flex justify-between items-start mb-6">
+              <span class="px-3 py-1 text-[10px] uppercase font-bold tracking-widest bg-cyan-500/20 text-cyan-400 rounded-full border border-cyan-500/30 mag-text">LIBRARY</span>
+              <span class="text-xs font-mono text-gray-400 font-bold mag-text"><span id="lib-count">0 scripts</span></span>
+            </div>
+            <div class="space-y-4">
+              <h3 class="text-2xl sm:text-3xl font-syne font-bold text-white group-hover:text-cyan-400 transition-colors break-all flex items-center gap-3 mag-text">
+                Open Script Library
+                <i class="fas fa-copy text-lg opacity-40 group-hover:opacity-100 group-hover:scale-110 transition-all"></i>
+              </h3>
+              <p class="text-gray-400 text-sm font-light mag-text">Browse every analysed script with its poster, filter by type and download the Lua again any time.</p>
+            </div>
+            <div class="mt-8 pt-6 border-t border-white/10 flex items-center justify-between text-xs font-semibold text-cyan-400 tracking-widest uppercase">
+              <span class="mag-text">Click to Open Library</span>
+              <i class="fas fa-arrow-right group-hover:translate-x-2 transition-transform"></i>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES SECTION -->
+    <section id="myth" class="min-h-screen px-6 py-32 relative">
+      <div class="max-w-7xl mx-auto space-y-16">
+        
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/10 pb-8">
+          <div>
+            <span class="text-xs uppercase tracking-[0.5em] text-accentPurple font-bold mag-text">// HOW IT WORKS</span>
+            <h2 class="text-5xl md:text-7xl font-syne font-extrabold text-white mt-2 mag-text">CORE FEATURES</h2>
+          </div>
+          <p class="text-gray-400 max-w-md text-sm font-light mag-text">
+            AI script analysis, automatic posters and a downloadable library, all in one flow.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          
+          <div class="glass-card rounded-3xl p-8 flex flex-col justify-between h-[420px] relative overflow-hidden group cursor-pointer tilt-card transition-all duration-300">
+            <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-accentPurple/20 rounded-full blur-3xl group-hover:bg-accentPurple/40 transition-colors"></div>
+            <div class="flex justify-between items-start z-10">
+              <span class="text-xs font-mono text-gray-400 mag-text">01 / ANALYSE</span>
+              <span class="px-3 py-1 text-[10px] uppercase font-bold tracking-widest bg-white/10 rounded-full border border-white/10 group-hover:border-accentPurple mag-text">AI Review</span>
+            </div>
+            <div class="z-10 my-auto">
+              <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-accentPurple to-cyan-500 flex items-center justify-center mb-6 shadow-lg shadow-accentPurple/30 group-hover:scale-110 transition-transform">
+                <i class="fas fa-cube text-2xl text-white"></i>
+              </div>
+              <h3 class="text-2xl font-syne font-bold text-white group-hover:text-accentPurple transition-colors mag-text">Script Analysis</h3>
+              <p class="text-gray-400 text-sm mt-2 font-light mag-text">AI reads the code, names the script, finds the game, lists features and flags risky calls.</p>
+            </div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-accentPurple tracking-widest uppercase z-10">
+              <span class="mag-text">Explore Feature</span> <i class="fas fa-arrow-right group-hover:translate-x-2 transition-transform"></i>
+            </div>
+          </div>
+
+          <div class="glass-card rounded-3xl p-8 flex flex-col justify-between h-[420px] relative overflow-hidden group cursor-pointer tilt-card transition-all duration-300">
+            <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl group-hover:bg-cyan-500/40 transition-colors"></div>
+            <div class="flex justify-between items-start z-10">
+              <span class="text-xs font-mono text-gray-400 mag-text">02 / POSTER</span>
+              <span class="px-3 py-1 text-[10px] uppercase font-bold tracking-widest bg-white/10 rounded-full border border-white/10 group-hover:border-cyan-400 mag-text">Auto Poster</span>
+            </div>
+            <div class="z-10 my-auto">
+              <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center mb-6 shadow-lg shadow-cyan-500/30 group-hover:scale-110 transition-transform">
+                <i class="fas fa-users text-2xl text-white"></i>
+              </div>
+              <h3 class="text-2xl font-syne font-bold text-white group-hover:text-cyan-400 transition-colors mag-text">Poster Maker</h3>
+              <p class="text-gray-400 text-sm mt-2 font-light mag-text">A unique poster is generated for every script from the AI's colours, motif and title.</p>
+            </div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-cyan-400 tracking-widest uppercase z-10">
+              <span class="mag-text">Explore Feature</span> <i class="fas fa-arrow-right group-hover:translate-x-2 transition-transform"></i>
+            </div>
+          </div>
+
+          <div class="glass-card rounded-3xl p-8 flex flex-col justify-between h-[420px] relative overflow-hidden group cursor-pointer tilt-card transition-all duration-300">
+            <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-fuchsia-500/20 rounded-full blur-3xl group-hover:bg-fuchsia-500/40 transition-colors"></div>
+            <div class="flex justify-between items-start z-10">
+              <span class="text-xs font-mono text-gray-400 mag-text">03 / DOWNLOAD</span>
+              <span class="px-3 py-1 text-[10px] uppercase font-bold tracking-widest bg-white/10 rounded-full border border-white/10 group-hover:border-fuchsia-400 mag-text">One Click</span>
+            </div>
+            <div class="z-10 my-auto">
+              <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-fuchsia-600 to-purple-800 flex items-center justify-center mb-6 shadow-lg shadow-fuchsia-500/30 group-hover:scale-110 transition-transform">
+                <i class="fas fa-network-wired text-2xl text-white"></i>
+              </div>
+              <h3 class="text-2xl font-syne font-bold text-white group-hover:text-fuchsia-400 transition-colors mag-text">Library Download</h3>
+              <p class="text-gray-400 text-sm mt-2 font-light mag-text">Every analysed script is shelved automatically and can be downloaded again in one click.</p>
+            </div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-fuchsia-400 tracking-widest uppercase z-10">
+              <span class="mag-text">Explore Feature</span> <i class="fas fa-arrow-right group-hover:translate-x-2 transition-transform"></i>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- INTERACTIVE PULSE SECTION -->
+    <section id="studio" class="min-h-screen flex items-center justify-center px-6 py-32 relative text-center">
+      <div class="max-w-4xl mx-auto space-y-8 z-20">
+        <span class="text-xs uppercase tracking-[0.5em] text-accentPurple font-bold mag-text">// BEYOND BOUNDARIES</span>
+        <h2 class="text-5xl sm:text-7xl font-syne font-extrabold text-metallic leading-tight mag-text">
+          BUILT FOR THE FUTURE
+        </h2>
+        <p class="text-gray-400 text-lg font-light max-w-2xl mx-auto mag-text">
+          Trigger the pulse to open your script library.
+        </p>
+
+        <div class="pt-8">
+          <button id="pulse-btn" class="px-10 py-5 rounded-full text-xs font-bold uppercase tracking-widest bg-white text-black hover:bg-accentPurple hover:text-white transition-all duration-300 shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:shadow-[0_0_50px_rgba(168,85,247,0.9)] hover:scale-105 active:scale-95 pulse-glow-anim flex items-center gap-3 mx-auto">
+            <i class="fas fa-bolt text-accentPurple group-hover:text-white transition-colors"></i>
+            <span class="mag-text">Trigger Energy Pulse</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER SECTION -->
+    <footer id="contact" class="border-t border-white/10 px-6 py-20 relative bg-black/80 backdrop-blur-xl">
+      <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-12">
+        <div class="space-y-4 max-w-sm">
+          <a href="#" class="text-2xl font-syne font-extrabold text-white tracking-widest mag-text">LuaVault</a>
+          <p class="text-xs text-gray-500 font-light leading-relaxed mag-text">
+            An AI-assisted game Lua script library: upload, analyse, poster, download.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-8 text-xs">
+          <div class="space-y-3">
+            <h4 class="font-bold text-white uppercase tracking-widest mag-text">Navigation</h4>
+            <ul class="space-y-2 text-gray-400">
+              <li><a href="#hero" class="hover:text-accentPurple transition-colors mag-text">Home</a></li>
+              <li><a href="#about" class="hover:text-accentPurple transition-colors mag-text">About</a></li>
+              <li><a href="#servers" class="hover:text-accentPurple transition-colors mag-text">Upload</a></li>
+              <li><a href="#myth" class="hover:text-accentPurple transition-colors mag-text">Features</a></li>
+            </ul>
+          </div>
+          <div class="space-y-3">
+            <h4 class="font-bold text-white uppercase tracking-widest mag-text">Library</h4>
+            <ul class="space-y-2 text-gray-400 font-mono text-[11px]">
+              <li><button onclick="openUpload()" class="hover:text-accentPurple transition-colors text-left flex items-center gap-1.5 mag-text"><i class="fas fa-copy text-[10px]"></i> Upload Lua</button></li>
+              <li><button onclick="goToPulse()" class="hover:text-accentPurple transition-colors text-left flex items-center gap-1.5 mag-text"><i class="fas fa-copy text-[10px]"></i> Open Library</button></li>
+            </ul>
+          </div>
+          <div class="space-y-3">
+            <h4 class="font-bold text-white uppercase tracking-widest mag-text">Community</h4>
+            <p class="text-gray-400 mag-text">Cloud-Synced Library</p>
+            <p class="text-gray-500 mag-text">Real-time sync across browsers</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="max-w-7xl mx-auto border-t border-white/5 mt-16 pt-8 flex flex-col sm:flex-row items-center justify-between text-[11px] text-gray-500 font-mono">
+        <p class="mag-text">© 2026 LuaVault. ALL RIGHTS RESERVED.</p>
+        <p class="mt-2 sm:mt-0 mag-text">DESIGNED WITH SYNTHETIC PRECISION</p>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- CLOUD STORAGE MODAL -->
+  <div id="cloud-storage-modal" class="fixed inset-0 z-[140] bg-black/90 backdrop-blur-xl hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-6">
+    <div class="glass-card max-w-md w-full max-h-[90vh] overflow-y-auto rounded-3xl p-8 border border-glowCyan/30 relative space-y-6">
+      <button onclick="closeCloudModal()" class="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors">
+        <i class="fas fa-xmark text-xl"></i>
+      </button>
+
+      <div class="space-y-2 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-glowCyan/20 text-glowCyan flex items-center justify-center mx-auto border border-glowCyan/30">
+          <i class="fas fa-cloud text-xl"></i>
+        </div>
+        <h3 class="text-2xl font-syne font-bold text-white">CLOUD STORAGE</h3>
+        <p class="text-xs text-gray-400">Manage your backup, Gist sync and shared library.</p>
+      </div>
+
+      <!-- Cloud settings -->
+      <div id="cloud-unlocked-view" class="space-y-4">
+        <div class="space-y-2">
+          <label class="block text-[10px] font-mono uppercase tracking-widest text-glowCyan">GitHub token</label>
+          <div class="flex items-center gap-3">
+            <input type="text" id="gist-token-copy" readonly value="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" class="flex-1 min-w-0 px-4 py-3 rounded-xl bg-black/60 border border-glowCyan/40 text-white text-xs font-mono focus:outline-none">
+            <button onclick="copyGistToken()" class="px-4 py-3 rounded-xl bg-glowCyan text-black font-bold text-xs uppercase tracking-wider hover:bg-cyan-300 transition-colors">Copy</button>
+            <button onclick="useSavedToken()" class="px-4 py-3 rounded-xl border border-glowCyan/40 text-glowCyan hover:text-white hover:border-glowCyan text-xs uppercase font-bold tracking-wider transition-colors">Connect</button>
+          </div>
+          <p class="text-[11px] text-gray-300">Add this token in GitHub Gist sync (or press Connect to do it in one click). This box is for copying only.</p>
+        </div>
+        <div class="border-t border-white/10 pt-4 space-y-3">
+          <label class="block text-[10px] font-mono uppercase tracking-widest text-glowCyan">GitHub Gist sync (free)</label>
+          <div class="flex items-center gap-3">
+            <input type="password" id="gist-token-input" placeholder="Paste token here (ghp_...)" autocomplete="off" spellcheck="false" class="flex-1 min-w-0 px-4 py-3 rounded-xl bg-black/60 border border-glowCyan/40 text-white text-sm focus:outline-none focus:border-glowCyan transition-colors">
+            <button onclick="pasteInto('gist-token-input')" class="px-4 py-3 rounded-xl border border-glowCyan/40 text-glowCyan hover:text-white hover:border-glowCyan text-xs uppercase font-bold tracking-wider transition-colors">Paste</button>
+          </div>
+          <p id="gist-status" class="text-[11px] font-mono text-gray-400">Gist sync: not connected</p>
+          <div class="flex items-center gap-3">
+            <button onclick="gistConnect()" class="flex-1 py-3 rounded-xl bg-glowCyan text-black font-bold text-xs uppercase tracking-wider hover:bg-cyan-300 transition-colors">Connect &amp; sync</button>
+            <button onclick="gistSync(true)" class="px-4 py-3 rounded-xl border border-glowCyan/40 text-glowCyan hover:text-white hover:border-glowCyan text-xs uppercase font-bold tracking-wider transition-colors">Sync now</button>
+            <button onclick="gistDisconnect()" class="px-4 py-3 rounded-xl border border-white/20 text-gray-400 hover:text-white text-xs uppercase font-bold tracking-wider transition-colors">Off</button>
+          </div>
+          <button onclick="gistWipe()" class="w-full py-3 rounded-xl border border-rose-500/50 text-rose-300 hover:text-white hover:border-rose-400 hover:bg-rose-500/10 text-xs uppercase font-bold tracking-wider transition-colors"><i class="fas fa-trash"></i> Delete ALL files in my Gist</button>
+        </div>
+        <div class="border-t border-white/10 pt-4 space-y-3">
+          <label class="block text-[10px] font-mono uppercase tracking-widest text-glowCyan">Share your library (read-only)</label>
+          <div class="flex items-center gap-3">
+            <input type="text" id="gist-share-id" readonly placeholder="Connect Gist sync to get your ID" class="flex-1 min-w-0 px-4 py-3 rounded-xl bg-black/60 border border-white/10 text-white text-xs font-mono focus:outline-none">
+            <button onclick="copyShareId()" class="px-4 py-3 rounded-xl border border-glowCyan/40 text-glowCyan hover:text-white hover:border-glowCyan text-xs uppercase font-bold tracking-wider transition-colors">Copy</button>
+          </div>
+          <p class="text-[10px] text-gray-500">Anyone with this ID can view and download your scripts, but cannot change them. Never share your token.</p>
+        </div>
+        <div class="border-t border-white/10 pt-4 space-y-3">
+          <label class="block text-[10px] font-mono uppercase tracking-widest text-glowCyan">View a friend's library</label>
+          <div class="flex items-center gap-3">
+            <input type="text" id="view-id-input" placeholder="Paste library ID" autocomplete="off" spellcheck="false" class="flex-1 min-w-0 px-4 py-3 rounded-xl bg-black/60 border border-glowCyan/40 text-white text-sm font-mono focus:outline-none focus:border-glowCyan transition-colors">
+            <button onclick="pasteInto('view-id-input')" class="px-4 py-3 rounded-xl border border-glowCyan/40 text-glowCyan hover:text-white hover:border-glowCyan text-xs uppercase font-bold tracking-wider transition-colors">Paste</button>
+          </div>
+          <p id="view-status" class="text-[11px] font-mono text-gray-400">Shared library: not connected</p>
+          <div class="flex items-center gap-3">
+            <button onclick="viewConnect()" class="flex-1 py-3 rounded-xl bg-glowCyan text-black font-bold text-xs uppercase tracking-wider hover:bg-cyan-300 transition-colors">View library</button>
+            <button onclick="viewDisconnect()" class="px-4 py-3 rounded-xl border border-white/20 text-gray-400 hover:text-white text-xs uppercase font-bold tracking-wider transition-colors">Stop</button>
+          </div>
+        </div>
+        <div class="border-t border-white/10 pt-4 space-y-3">
+          <label class="block text-[10px] font-mono uppercase tracking-widest text-glowCyan">Backup file</label>
+          <p id="cloud-status" class="text-[11px] font-mono text-gray-400"></p>
+          <div class="flex items-center gap-3">
+            <button onclick="gExport()" class="flex-1 py-3 rounded-xl border border-glowCyan/40 text-glowCyan hover:text-white hover:border-glowCyan text-xs uppercase font-bold tracking-wider transition-colors">Export backup</button>
+            <button onclick="gImport()" class="flex-1 py-3 rounded-xl border border-glowCyan/40 text-glowCyan hover:text-white hover:border-glowCyan text-xs uppercase font-bold tracking-wider transition-colors">Import backup</button>
+          </div>
+          <input type="file" id="backup-input" accept=".json,application/json" class="hidden">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXISTING FILES POPUP -->
+  <div id="exists-modal" class="fixed inset-0 z-[310] bg-black/80 backdrop-blur-md hidden items-center justify-center p-6">
+    <div class="glass-card max-w-md w-full rounded-3xl p-8 border border-accentPurple/40 space-y-5">
+      <div class="space-y-2 text-center">
+        <h3 class="text-xl font-syne font-bold text-white">File already exists</h3>
+        <p id="exists-summary" class="text-sm text-gray-300"></p>
+      </div>
+      <ul id="exists-list" class="max-h-40 overflow-y-auto space-y-1 text-xs font-mono text-amber-300 bg-black/40 rounded-xl p-3 border border-white/10"></ul>
+      <button id="exists-ok" class="w-full py-3 rounded-xl bg-gradient-to-r from-accentPurple to-accentViolet text-white font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity">OK</button>
+    </div>
+  </div>
+
+  <!-- LIBRARY PASSWORD MODAL -->
+  <div id="pw-modal" class="fixed inset-0 z-[300] bg-black/80 backdrop-blur-md hidden items-center justify-center p-6">
+    <div class="glass-card max-w-sm w-full rounded-3xl p-8 border border-accentPurple/40 space-y-5">
+      <div class="space-y-1 text-center">
+        <h3 class="text-xl font-syne font-bold text-white">Password required</h3>
+        <p id="pw-action" class="text-xs text-gray-400"></p>
+      </div>
+      <input type="password" id="pw-input" placeholder="Enter password" autocomplete="off" class="w-full px-4 py-3 rounded-xl bg-black/60 border border-white/10 text-white text-sm focus:outline-none focus:border-accentPurple transition-colors">
+      <p id="pw-error" class="text-xs text-rose-400 font-mono hidden">Wrong password.</p>
+      <div class="flex items-center gap-3">
+        <button id="pw-ok" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-accentPurple to-accentViolet text-white font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity">Unlock</button>
+        <button id="pw-cancel" class="px-5 py-3 rounded-xl border border-white/20 text-gray-300 hover:text-white text-xs uppercase font-bold tracking-wider transition-colors">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SMOOTH SCROLLING GALLERY MODAL -->
+  <div id="pulse-gallery-modal" class="fixed inset-0 z-[120] bg-black/90 backdrop-blur-2xl hidden opacity-0 transition-opacity duration-300 overflow-y-auto">
+    <!-- Close Button -->
+    <button onclick="closeGalleryModal()" class="fixed top-6 right-8 z-[130] p-4 rounded-full bg-white/10 hover:bg-accentPurple/40 border border-white/20 text-white transition-all hover:scale-110 group cursor-pointer" title="Close Gallery (Esc)">
+      <i class="fas fa-xmark text-2xl group-hover:rotate-90 transition-transform duration-300"></i>
+    </button>
+
+    <!-- Modal Header -->
+    <div class="max-w-7xl mx-auto px-6 pt-16 pb-8 text-center space-y-4 relative z-10">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-accentPurple/40 bg-accentPurple/10 text-accentPurple text-xs uppercase font-semibold tracking-widest">
+        <i class="fas fa-atom animate-spin" style="animation-duration: 8s;"></i>
+        <span class="mag-text">Library Unlocked</span>
+      </div>
+      <h2 class="text-4xl sm:text-6xl font-syne font-extrabold text-white tracking-tight mag-text">
+        SCRIPT LIBRARY
+      </h2>
+      <p class="text-gray-400 text-sm font-light max-w-2xl mx-auto font-cormorant text-lg italic mag-text">
+        "Every Lua you uploaded, analysed, illustrated and ready to download."
+      </p>
+
+      <!-- Total games count -->
+      <div class="inline-flex items-center gap-3 px-6 py-3 rounded-2xl border border-accentPurple/40 bg-black/40 backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.25)]">
+        <i class="fas fa-gamepad text-accentPurple text-lg"></i>
+        <span class="text-xs font-mono uppercase tracking-widest text-gray-400">Total games</span>
+        <span id="gallery-total" class="text-3xl font-syne font-extrabold text-white leading-none">0</span>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="flex flex-wrap items-center justify-center gap-3 pt-4" id="gallery-filters">
+        <button onclick="filterGallery('all')" class="gallery-filter-btn px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider bg-accentPurple text-white border border-accentPurple shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all mag-text">All Scripts</button>
+        <button onclick="filterGallery('realms')" class="gallery-filter-btn px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider bg-white/5 text-gray-300 border border-white/10 hover:border-accentPurple hover:text-white transition-all mag-text">Games</button>
+        <button onclick="filterGallery('serenity')" class="gallery-filter-btn px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider bg-white/5 text-gray-300 border border-white/10 hover:border-accentPurple hover:text-white transition-all mag-text">Utilities</button>
+        <button onclick="filterGallery('twilight')" class="gallery-filter-btn px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider bg-white/5 text-gray-300 border border-white/10 hover:border-accentPurple hover:text-white transition-all mag-text">Visual & Other</button>
+      </div>
+    </div>
+
+    <!-- Gallery Grid Container -->
+    <div class="max-w-7xl mx-auto px-6 pb-24">
+      <div id="gallery-grid" class="grid grid-cols-1 gap-12">
+        <!-- Dynamic Cards rendered via JS -->
+      </div>
+
+      <!-- AI TOOLS (bottom of library) -->
+      <div class="pt-16 flex flex-col items-center gap-3">
+        <div class="text-[10px] font-mono uppercase tracking-widest text-gray-500">Library AI tools</div>
+        <div class="flex flex-wrap justify-center gap-3">
+          <button onclick="gFill()" class="px-5 py-3 rounded-full text-[11px] font-semibold uppercase tracking-wider border bg-white/5 hover:bg-white/10 transition-all cursor-pointer border-sky-400/40 text-sky-200 hover:text-white"><i class="fas fa-wand-magic-sparkles"></i> Fill game details</button>
+          <button onclick="gFixPosters()" class="px-5 py-3 rounded-full text-[11px] font-semibold uppercase tracking-wider border bg-white/5 hover:bg-white/10 transition-all cursor-pointer border-emerald-400/40 text-emerald-200 hover:text-white"><i class="fas fa-image"></i> Find missing posters</button>
+          <button onclick="gAnalyse()" class="px-5 py-3 rounded-full text-[11px] font-semibold uppercase tracking-wider border bg-white/5 hover:bg-white/10 transition-all cursor-pointer border-purple-400/40 text-purple-200 hover:text-white"><i class="fas fa-magnifying-glass"></i> AI scan existing Lua</button>
+        </div>
+      </div>
+
+      <!-- DELETE ALL (password protected) -->
+      <div class="pt-16 flex flex-col items-center gap-3">
+        <div class="w-full max-w-xs border-t border-white/10 mb-3"></div>
+        <button id="delete-all-btn" onclick="deleteAllScripts()" class="px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest border border-rose-500/50 text-rose-300 bg-rose-500/10 hover:bg-rose-500 hover:text-white transition-all duration-300 flex items-center gap-2 cursor-pointer">
+          <i class="fas fa-trash"></i>
+          <span>Delete all scripts</span>
+        </button>
+        <p class="text-[11px] text-gray-500 font-mono">Password required. This cannot be undone.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX MODAL FOR FULLSCREEN IMAGE VIEWING -->
+  <div id="lightbox-modal" class="fixed inset-0 z-[150] bg-black/95 backdrop-blur-3xl hidden opacity-0 transition-opacity duration-300 flex flex-col justify-between p-6 sm:p-12">
+    <button onclick="closeLightbox()" class="absolute top-6 right-8 p-4 rounded-full bg-white/10 hover:bg-accentPurple/40 border border-white/20 text-white transition-all hover:scale-110 z-20">
+      <i class="fas fa-xmark text-xl"></i>
+    </button>
+
+    <div class="flex-1 flex items-center justify-center my-auto relative">
+      <img id="lightbox-img" src="" alt="Expanded View" class="max-h-[75vh] max-w-full object-contain rounded-2xl border border-white/10 shadow-[0_0_50px_rgba(168,85,247,0.3)] transition-transform duration-500">
+    </div>
+
+    <div class="max-w-3xl mx-auto text-center space-y-2 mt-4">
+      <span id="lightbox-tag" class="text-xs uppercase font-mono tracking-widest text-accentPurple font-semibold mag-text"></span>
+      <p id="lightbox-dialogue" class="text-xl sm:text-2xl font-cormorant italic text-gray-200 leading-relaxed mag-text"></p>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // -----------------------------------------------------------------
+    // Gallery Data
+    // -----------------------------------------------------------------
+    let galleryData = [];
+
+    // GSAP Registration
+    gsap.registerPlugin(ScrollTrigger);
+
+    // -----------------------------------------------------------------
+    // MAGNETIC REPULSION EFFECT (Opposite Magnet Physics)
+    // -----------------------------------------------------------------
+    function setupMagneticRepulsion() {
+      const magneticTargets = document.querySelectorAll('h1, h2, h3, p, a, button, span, .mag-text');
+
+      magneticTargets.forEach((el) => {
+        if (!el.classList.contains('mag-text')) {
+          el.classList.add('mag-text');
+        }
+
+        el.addEventListener('mousemove', (e) => {
+          const rect = el.getBoundingClientRect();
+          const elementCenterX = rect.left + rect.width / 2;
+          const elementCenterY = rect.top + rect.height / 2;
+
+          const isTopHalf = e.clientY < elementCenterY;
+
+          if (isTopHalf) {
+            const deltaX = e.clientX - elementCenterX;
+            const deltaY = e.clientY - elementCenterY;
+
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY) || 1;
+            const maxRepulsionDistance = Math.max(rect.width, rect.height, 120);
+
+            if (distance < maxRepulsionDistance) {
+              const pushStrength = (1 - distance / maxRepulsionDistance) * 35;
+              const moveX = -(deltaX / distance) * pushStrength;
+              const moveY = -(deltaY / distance) * pushStrength;
+
+              el.style.transform = `translate3d(${moveX}px, ${moveY}px, 0)`;
+            }
+          } else {
+            el.style.transform = 'translate3d(0, 0, 0)';
+          }
+        });
+
+        el.addEventListener('mouseleave', () => {
+          el.style.transform = 'translate3d(0, 0, 0)';
+        });
+      });
+    }
+
+    setupMagneticRepulsion();
+
+    // -----------------------------------------------------------------
+    // ADVANCED FUTURISTIC HUD CURSOR SYSTEM WITH PARTICLE TRAIL
+    // -----------------------------------------------------------------
+    const coreDot = document.getElementById('cursor-core');
+    const reticleRing = document.getElementById('cursor-reticle');
+    const brackets = document.getElementById('cursor-brackets');
+    const hudData = document.getElementById('cursor-hud');
+    const cursorCanvas = document.getElementById('cursor-canvas');
+    const ctx = cursorCanvas ? cursorCanvas.getContext('2d') : null;
+
+    let targetX = window.innerWidth / 2;
+    let targetY = window.innerHeight / 2;
+
+    // Smooth Interpolation Lag Variables
+    let coreX = targetX, coreY = targetY;
+    let reticleX = targetX, reticleY = targetY;
+    let bracketsX = targetX, bracketsY = targetY;
+    let hudX = targetX, hudY = targetY;
+
+    let particles = [];
+    let isTouchDevice = false;
+
+    // Resize Cursor Trail Canvas
+    function resizeCursorCanvas() {
+      if (cursorCanvas) {
+        cursorCanvas.width = window.innerWidth;
+        cursorCanvas.height = window.innerHeight;
+      }
+    }
+    window.addEventListener('resize', resizeCursorCanvas);
+    resizeCursorCanvas();
+
+    window.addEventListener('touchstart', () => { isTouchDevice = true; }, { passive: true });
+
+    window.addEventListener('mousemove', (e) => {
+      if (isTouchDevice) return;
+      targetX = e.clientX;
+      targetY = e.clientY;
+
+      // Spawn Cyber Particle on Movement
+      if (Math.random() > 0.3) {
+        particles.push({
+          x: targetX,
+          y: targetY,
+          vx: (Math.random() - 0.5) * 2.5,
+          vy: (Math.random() - 0.5) * 2.5,
+          size: Math.random() * 3 + 1,
+          color: Math.random() > 0.5 ? '#06B6D4' : '#A855F7',
+          life: 1.0,
+          decay: Math.random() * 0.04 + 0.02
+        });
+      }
+    }, { passive: true });
+
+    // Click Down Effects
+    window.addEventListener('mousedown', () => {
+      document.body.classList.add('cursor-active');
+      for (let i = 0; i < 12; i++) {
+        const angle = (Math.PI * 2 / 12) * i;
+        const speed = Math.random() * 4 + 2;
+        particles.push({
+          x: targetX,
+          y: targetY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: Math.random() * 4 + 2,
+          color: '#06B6D4',
+          life: 1.0,
+          decay: 0.03
+        });
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      document.body.classList.remove('cursor-active');
+    });
+
+    // Render & Animate Futuristic HUD Cursor
+    function animateFuturisticCursor() {
+      if (!isTouchDevice && coreDot) {
+        // Multi-layered Interpolation (Lerp) for Cybernetic Inertia
+        coreX += (targetX - coreX) * 0.85;
+        coreY += (targetY - coreY) * 0.85;
+
+        reticleX += (targetX - reticleX) * 0.25;
+        reticleY += (targetY - reticleY) * 0.25;
+
+        bracketsX += (targetX - bracketsX) * 0.15;
+        bracketsY += (targetY - bracketsY) * 0.15;
+
+        hudX += (targetX - hudX) * 0.1;
+        hudY += (targetY - hudY) * 0.1;
+
+        coreDot.style.transform = `translate3d(${coreX}px, ${coreY}px, 0) translate(-50%, -50%)`;
+        reticleRing.style.transform = `translate3d(${reticleX}px, ${reticleY}px, 0) translate(-50%, -50%)`;
+        brackets.style.transform = `translate3d(${bracketsX}px, ${bracketsY}px, 0) translate(-50%, -50%)`;
+        hudData.style.transform = `translate3d(${hudX + 22}px, ${hudY + 22}px, 0)`;
+
+        // Update Coordinate Telemetry HUD
+        hudData.innerText = `X:${Math.round(targetX)} | Y:${Math.round(targetY)}`;
+
+        // Draw Particle Trails & Cyber Vectors
+        if (ctx) {
+          ctx.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+
+          // Vector Line connecting core to delayed bracket
+          ctx.beginPath();
+          ctx.strokeStyle = 'rgba(6, 182, 212, 0.25)';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([2, 4]);
+          ctx.moveTo(coreX, coreY);
+          ctx.lineTo(bracketsX, bracketsY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Update Particle Cloud
+          for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= p.decay;
+
+            if (p.life <= 0) {
+              particles.splice(i, 1);
+              continue;
+            }
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.life * 0.7;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = p.color;
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+            ctx.shadowBlur = 0;
+          }
+        }
+      }
+      requestAnimationFrame(animateFuturisticCursor);
+    }
+    animateFuturisticCursor();
+
+    // Hover Target Detection
+    function bindHoverables() {
+      if (isTouchDevice) return;
+      const hoverables = document.querySelectorAll('a, button, .tilt-card, .gallery-card, input, textarea, [role="button"]');
+      hoverables.forEach(el => {
+        el.addEventListener('mouseenter', () => {
+          document.body.classList.add('cursor-hover');
+        });
+        el.addEventListener('mouseleave', () => {
+          document.body.classList.remove('cursor-hover');
+        });
+      });
+    }
+    bindHoverables();
+
+    // Gallery & ScrollTrigger Functions
+    let galleryScrollTriggers = [];
+
+    function clearGalleryScrollTriggers() {
+      galleryScrollTriggers.forEach(st => st.kill());
+      galleryScrollTriggers = [];
+    }
+
+    function initGalleryScrollAnimations() {
+      clearGalleryScrollTriggers();
+      const modalContainer = document.getElementById('pulse-gallery-modal');
+      const cards = modalContainer.querySelectorAll('.gallery-card');
+
+      cards.forEach((card) => {
+        gsap.set(card, {
+          y: 60,
+          opacity: 0,
+          scale: 0.96
+        });
+
+        const trigger = ScrollTrigger.create({
+          scroller: modalContainer,
+          trigger: card,
+          start: 'top 85%',
+          onEnter: () => {
+            gsap.to(card, {
+              y: 0,
+              opacity: 1,
+              scale: 1,
+              duration: 0.8,
+              delay: 0.05,
+              ease: 'power3.out',
+              overwrite: 'auto'
+            });
+          }
+        });
+
+        galleryScrollTriggers.push(trigger);
+      });
+
+      ScrollTrigger.refresh();
+    }
+
+    function renderGallery(items) {
+      try{updateCount()}catch(e){}
+      const grid = document.getElementById('gallery-grid');
+      grid.innerHTML = '';
+      if (!items.length) { grid.innerHTML = '<p class="text-center text-gray-400 font-cormorant italic text-xl py-24 mag-text">Nothing here yet. Upload a .lua file and the AI will shelve it for you.</p>'; return; }
+
+      items.forEach((item) => {
+        const card = document.createElement('div');
+        card.className = `gallery-card glass-card rounded-3xl overflow-hidden group border border-white/10 hover:border-accentPurple transition-all duration-300 cursor-pointer flex flex-col md:flex-row items-stretch min-h-[380px] w-full`;
+        card.setAttribute('data-category', item.category);
+        card.onclick = () => openLightbox(item.src, item.tag, item.dialogue);
+
+        card.innerHTML = `
+          <div class="relative w-full md:w-3/5 h-72 md:h-auto overflow-hidden gallery-img-container bg-black/50">
+            <img src="${item.src}" alt="${esc(item.title)}" onerror="swapPoster(this,${item.id})" class="w-full h-full object-cover" >
+            <div class="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/80 via-black/20 to-transparent"></div>
+            <div class="absolute top-4 left-4 z-10">
+              <span class="px-3.5 py-1.5 text-xs font-mono uppercase tracking-widest bg-black/70 backdrop-blur-md text-accentPurple rounded-full border border-accentPurple/40 mag-text">${esc(item.tag)}</span>
+            </div>
+            <div class="absolute bottom-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span class="w-10 h-10 rounded-full bg-accentPurple/80 text-white flex items-center justify-center text-sm shadow-lg backdrop-blur-sm"><i class="fas fa-expand"></i></span>
+            </div>
+          </div>
+          <div class="p-8 md:p-12 w-full md:w-2/5 flex flex-col justify-between bg-black/40 backdrop-blur-sm space-y-6">
+            <div class="space-y-4">
+              <span class="text-xs uppercase font-mono tracking-widest text-accentPurple/80 block mag-text">// LUA SCRIPT</span>
+              <div class="flex items-center gap-2" onclick="event.stopPropagation()">
+                <input id="name-in-${item.id}" type="text" maxlength="80" value="${esc(item.title)}" placeholder="Type the game name…" onkeydown="if(event.key==='Enter'){event.preventDefault();renameInline(${item.id})}" class="min-w-0 flex-1 bg-transparent border-b-2 border-sky-400/60 focus:border-sky-300 outline-none text-2xl sm:text-4xl font-syne font-bold text-white leading-tight py-1">
+                <button onclick="renameInline(${item.id})" title="AI reads the name and fills in the game details" class="shrink-0 px-3 py-2 rounded-full text-[10px] font-semibold uppercase tracking-wider border border-sky-400/50 text-sky-200 hover:border-sky-300">AI fill</button>
+              </div>
+              ${item.aiBusy?`<p class="text-base font-cormorant italic text-sky-300 animate-pulse mag-text">AI is reading the name and gathering details about this game…</p>`:(item.details?`<div class="space-y-3 text-left">
+                ${item.details.genre?`<span class="inline-block px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-widest border border-accentPurple/40 text-accentPurple">${esc(item.details.genre)}</span>`:''}
+                ${item.details.about?`<p class="text-base sm:text-lg font-cormorant text-gray-200 leading-relaxed mag-text">${esc(item.details.about)}</p>`:''}
+                ${item.details.specialty?`<div><div class="text-[10px] font-mono uppercase tracking-widest text-cyan-300/80">Speciality</div><p class="text-sm sm:text-base font-cormorant italic text-gray-300 leading-relaxed mag-text">${esc(item.details.specialty)}</p></div>`:''}
+                ${item.details.scriptUse?`<div><div class="text-[10px] font-mono uppercase tracking-widest text-cyan-300/80">Scripts for this game</div><p class="text-sm sm:text-base font-cormorant italic text-gray-300 leading-relaxed mag-text">${esc(item.details.scriptUse)}</p></div>`:''}
+                ${(item.details.features||[]).length?`<div class="flex flex-wrap gap-2">${item.details.features.map(f=>`<span class="px-2.5 py-1 rounded-full text-[10px] font-mono border border-white/15 text-gray-300">${esc(f)}</span>`).join('')}</div>`:''}
+              </div>`:`<p class="text-base sm:text-xl font-cormorant italic text-gray-300 leading-relaxed mag-text">"${esc(item.dialogue)}"</p>`)}
+            </div>
+            <div class="pt-6 border-t border-white/10 flex items-center justify-between text-xs font-mono tracking-widest uppercase text-gray-400 group-hover:text-accentPurple transition-colors">
+              <div class="flex flex-wrap gap-2"><button onclick="event.stopPropagation();editScriptName(${item.id})" class="px-3 py-2 rounded-full text-[10px] font-semibold uppercase tracking-wider border border-white/15 text-gray-200 hover:border-accentPurple">Edit name</button><button onclick="event.stopPropagation();changeScriptPoster(${item.id})" class="px-3 py-2 rounded-full text-[10px] font-semibold uppercase tracking-wider border border-white/15 text-gray-200 hover:border-cyan-400">Change poster</button><button onclick="event.stopPropagation();gAiPoster(${item.id})" class="px-3 py-2 rounded-full text-[10px] font-semibold uppercase tracking-wider border border-cyan-400/40 text-cyan-200 hover:border-cyan-300">AI game poster</button><button onclick="event.stopPropagation();deleteScript(${item.id})" class="px-3 py-2 rounded-full text-[10px] font-semibold uppercase tracking-wider border border-white/15 text-rose-300 hover:border-rose-400">Delete</button></div>
+              <button onclick="event.stopPropagation();downloadLua(${item.id})" class="px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider bg-gradient-to-r from-accentPurple to-accentViolet text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:shadow-[0_0_30px_rgba(168,85,247,0.8)] transition-all mag-text"><i class="fas fa-download"></i> Download</button>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      bindHoverables();
+      setupMagneticRepulsion();
+
+      requestAnimationFrame(() => {
+        initGalleryScrollAnimations();
+        try { ScrollTrigger.refresh(); } catch(e) {}
+        setTimeout(() => {
+          document.querySelectorAll('#gallery-grid .gallery-card').forEach(c => {
+            if (parseFloat(getComputedStyle(c).opacity) < 0.05 && c.getBoundingClientRect().top < window.innerHeight) {
+              gsap.to(c, { y: 0, opacity: 1, scale: 1, duration: 0.6, overwrite: 'auto' });
+            }
+          });
+        }, 900);
+      });
+    }
+
+    function filterGallery(cat) {
+      const buttons = document.querySelectorAll('.gallery-filter-btn');
+      buttons.forEach(btn => {
+        btn.classList.remove('bg-accentPurple', 'text-white', 'border-accentPurple', 'shadow-[0_0_15px_rgba(168,85,247,0.4)]');
+        btn.classList.add('bg-white/5', 'text-gray-300', 'border-white/10');
+      });
+
+      event.currentTarget.classList.remove('bg-white/5', 'text-gray-300', 'border-white/10');
+      event.currentTarget.classList.add('bg-accentPurple', 'text-white', 'border-accentPurple', 'shadow-[0_0_15px_rgba(168,85,247,0.4)]');
+
+      if (cat === 'all') {
+        renderGallery(galleryData);
+      } else {
+        const filtered = galleryData.filter(i => i.category === cat);
+        renderGallery(filtered);
+      }
+    }
+
+    function openGalleryModal() {
+      const modal = document.getElementById('pulse-gallery-modal');
+      modal.classList.remove('hidden');
+      renderGallery(galleryData);
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+      }, 10);
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeGalleryModal() {
+      const modal = document.getElementById('pulse-gallery-modal');
+      modal.classList.add('opacity-0');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        clearGalleryScrollTriggers();
+      }, 300);
+    }
+
+    function openLightbox(src, tag, dialogue) {
+      const lb = document.getElementById('lightbox-modal');
+      const img = document.getElementById('lightbox-img');
+      const tagEl = document.getElementById('lightbox-tag');
+      const diaEl = document.getElementById('lightbox-dialogue');
+
+      img.src = src;
+      tagEl.innerText = tag;
+      diaEl.innerText = `"${dialogue}"`;
+
+      lb.classList.remove('hidden');
+      setTimeout(() => {
+        lb.classList.remove('opacity-0');
+      }, 10);
+    }
+
+    function closeLightbox() {
+      const lb = document.getElementById('lightbox-modal');
+      lb.classList.add('opacity-0');
+      setTimeout(() => {
+        lb.classList.add('hidden');
+      }, 300);
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeLightbox();
+        closeGalleryModal();
+        closeCloudModal();
+      }
+    });
+
+    // -----------------------------------------------------------------
+    // Copy IP To Clipboard
+    // -----------------------------------------------------------------
+    let toastTimeout = null;
+
+    function copyIP(text, label) {
+      const el = document.createElement('textarea');
+      el.value = text;
+      el.setAttribute('readonly', '');
+      el.style.position = 'absolute';
+      el.style.left = '-9999px';
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+
+      const toast = document.getElementById('copy-toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.innerText = `Copied ${label} Address!`;
+      toast.classList.add('show');
+      
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // -----------------------------------------------------------------
+    // High-Performance Three.js Engine
+    // -----------------------------------------------------------------
+    const container = document.getElementById('webgl-container');
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 6;
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    container.appendChild(renderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+    scene.add(ambientLight);
+
+    const pointLight1 = new THREE.PointLight(0xa855f7, 2.5, 50);
+    pointLight1.position.set(5, 5, 5);
+    scene.add(pointLight1);
+
+    const pointLight2 = new THREE.PointLight(0x06b6d4, 2, 50);
+    pointLight2.position.set(-5, -5, -2);
+    scene.add(pointLight2);
+
+    // Optimized Icosahedron Mesh
+    const geometry = new THREE.IcosahedronGeometry(1.8, 32);
+    const positionAttribute = geometry.attributes.position;
+    const vertexPositions = [];
+    for (let i = 0; i < positionAttribute.count; i++) {
+      vertexPositions.push(new THREE.Vector3().fromBufferAttribute(positionAttribute, i));
+    }
+
+    const material = new THREE.MeshPhysicalMaterial({
+      color: 0x111115,
+      metalness: 0.85,
+      roughness: 0.15,
+      clearcoat: 0.8,
+      clearcoatRoughness: 0.2,
+      wireframe: false,
+    });
+
+    const scarabMesh = new THREE.Mesh(geometry, material);
+    scene.add(scarabMesh);
+
+    // Particle Cloud
+    const particleCount = 600;
+    const particleGeometry = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+    const particleVelocities = [];
+
+    for (let i = 0; i < particleCount * 3; i += 3) {
+      particlePositions[i] = (Math.random() - 0.5) * 14;
+      particlePositions[i + 1] = (Math.random() - 0.5) * 14;
+      particlePositions[i + 2] = (Math.random() - 0.5) * 14;
+
+      particleVelocities.push({
+        x: (Math.random() - 0.5) * 0.008,
+        y: (Math.random() - 0.5) * 0.008,
+        z: (Math.random() - 0.5) * 0.008
+      });
+    }
+
+    particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+
+    const particleMaterial = new THREE.PointsMaterial({
+      color: 0xa855f7,
+      size: 0.035,
+      transparent: true,
+      opacity: 0.6,
+      blending: THREE.AdditiveBlending
+    });
+
+    const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+    scene.add(particleSystem);
+
+    let clock = new THREE.Clock();
+
+    function animateWebGL() {
+      const elapsedTime = clock.getElapsedTime();
+
+      // Vertex Wave Animation
+      const positions = scarabMesh.geometry.attributes.position;
+      for (let i = 0; i < positions.count; i++) {
+        const v = vertexPositions[i];
+        const wave = Math.sin(elapsedTime * 2 + v.x * 2) * 0.12;
+        positions.setXYZ(i, v.x + v.x * wave, v.y + v.y * wave, v.z + v.z * wave);
+      }
+      scarabMesh.geometry.attributes.position.needsUpdate = true;
+
+      scarabMesh.rotation.y = elapsedTime * 0.15;
+      scarabMesh.rotation.x = elapsedTime * 0.08;
+
+      const pPos = particleSystem.geometry.attributes.position.array;
+      for (let i = 0; i < particleCount; i++) {
+        pPos[i * 3] += particleVelocities[i].x;
+        pPos[i * 3 + 1] += particleVelocities[i].y;
+        pPos[i * 3 + 2] += particleVelocities[i].z;
+      }
+      particleSystem.geometry.attributes.position.needsUpdate = true;
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(animateWebGL);
+    }
+    animateWebGL();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Native Smooth Scroll Animations with GSAP Trigger
+    gsap.to('.hero-title', { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out', delay: 0.2 });
+    gsap.to('.hero-subtitle', { opacity: 1, y: 0, duration: 1, ease: 'power3.out', delay: 0.5 });
+    gsap.to('.hero-fade', { opacity: 1, duration: 0.8, delay: 0.8 });
+
+    gsap.timeline({
+      scrollTrigger: {
+        trigger: '#hero',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 0.5
+      }
+    })
+    .to(scarabMesh.position, { z: 1.5, y: -0.5 })
+    .to(scarabMesh.rotation, { x: Math.PI * 0.5, y: Math.PI * 0.5 });
+
+    gsap.timeline({
+      scrollTrigger: {
+        trigger: '#about',
+        start: 'top center',
+        end: 'bottom center',
+        scrub: 0.5
+      }
+    })
+    .to(scarabMesh.position, { x: -2, z: 2 });
+
+    gsap.timeline({
+      scrollTrigger: {
+        trigger: '#myth',
+        start: 'top center',
+        end: 'bottom center',
+        scrub: 0.5
+      }
+    })
+    .to(scarabMesh.position, { x: 2, z: 0 });
+
+    gsap.utils.toArray('.reveal-text').forEach((text) => {
+      gsap.from(text, {
+        scrollTrigger: {
+          trigger: text,
+          start: 'top 88%',
+          toggleActions: 'play none none reverse'
+        },
+        opacity: 0,
+        y: 30,
+        duration: 0.8,
+        ease: 'power2.out'
+      });
+    });
+
+    const counters = document.querySelectorAll('.counter');
+    counters.forEach(counter => {
+      const target = +counter.getAttribute('data-target');
+      gsap.to(counter, {
+        scrollTrigger: {
+          trigger: counter,
+          start: 'top 90%'
+        },
+        innerText: target,
+        duration: 1.8,
+        snap: { innerText: 1 },
+        onUpdate: function() {
+          counter.innerText = '+' + Math.ceil(this.targets()[0].innerText);
+        }
+      });
+    });
+
+    // Pulse Button Trigger
+    const pulseBtn = document.getElementById('pulse-btn');
+    pulseBtn.addEventListener('click', () => {
+      gsap.to(scarabMesh.scale, { x: 2, y: 2, z: 2, duration: 0.3, yoyo: true, repeat: 1 });
+      gsap.to(particleMaterial, { size: 0.12, duration: 0.3, yoyo: true, repeat: 1 });
+
+      setTimeout(() => {
+        openGalleryModal();
+      }, 300);
+    });
+
+    // Card Tilt Effect
+    const tiltCards = document.querySelectorAll('.tilt-card');
+    tiltCards.forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        if (isTouchDevice) return;
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+
+        const tiltX = (y / rect.height) * -10;
+        const tiltY = (x / rect.width) * 10;
+
+        card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.01, 1.01, 1.01)`;
+      }, { passive: true });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+      });
+    });
+
+    // Web Audio Sound Generator
+    let audioCtx = null;
+    let oscillator = null;
+    let gainNode = null;
+    let isPlaying = false;
+
+    const soundBtn = document.getElementById('sound-btn');
+    const iconOff = document.getElementById('sound-icon-off');
+    const iconOn = document.getElementById('sound-icon-on');
+
+    soundBtn.addEventListener('click', () => {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+
+      if (!isPlaying) {
+        oscillator = audioCtx.createOscillator();
+        gainNode = audioCtx.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(110, audioCtx.currentTime);
+
+        gainNode.gain.setValueAtTime(0.01, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.12, audioCtx.currentTime + 2);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.start();
+        isPlaying = true;
+
+        iconOff.classList.add('hidden');
+        iconOn.classList.remove('hidden');
+      } else {
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+        setTimeout(() => {
+          if (oscillator) oscillator.stop();
+          isPlaying = false;
+        }, 500);
+
+        iconOff.classList.remove('hidden');
+        iconOn.classList.add('hidden');
+      }
+    });
+
+    // FPS Monitor
+    let frameCount = 0;
+    let lastTime = performance.now();
+    const fpsElement = document.getElementById('fps-counter');
+
+    function updateFPS() {
+      const now = performance.now();
+      frameCount++;
+      if (now - lastTime >= 1000) {
+        fpsElement.innerText = `${frameCount} FPS`;
+        frameCount = 0;
+        lastTime = now;
+      }
+      requestAnimationFrame(updateFPS);
+    }
+    updateFPS();
+  </script>
+<input type="file" id="lua-input" accept=".lua,.luau,.txt" multiple class="hidden">
+<script>
+// ===== Realtime Firebase Cloud Sync Database Configuration =====
+// >>> PASTE YOUR OWN FIREBASE WEB CONFIG HERE (Firebase console > Project settings > Your apps > Web app) <<<
+const firebaseConfig = {
+  apiKey: "PASTE_YOUR_API_KEY",
+  authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
+  projectId: "PASTE_YOUR_PROJECT_ID",
+  storageBucket: "PASTE_YOUR_PROJECT.appspot.com",
+  messagingSenderId: "PASTE_SENDER_ID",
+  appId: "PASTE_APP_ID"
+};
+
+const CLOUD_READY = !/PASTE|Placeholder/i.test(firebaseConfig.apiKey + firebaseConfig.projectId);
+let db = null;
+let useCloudDb = false;
+
+try {
+  if (CLOUD_READY && typeof firebase !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    useCloudDb = true;
+  }
+} catch(e) {
+  console.warn('Firebase init fallback to local storage', e);
+  useCloudDb = false;
+}
+
+// ===== Cloud Storage popup =====
+function openCloudModal() {
+  const modal = document.getElementById('cloud-storage-modal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  setTimeout(() => modal.classList.remove('opacity-0'), 10);
+  try {
+    const st = document.getElementById('cloud-status');
+    if (st) st.innerText = 'Save the file anywhere you like (Drive, Dropbox, USB) and import it on another browser.';
+    if (gistToken()) {
+      const gi = document.getElementById('gist-token-input');
+      if (gi) gi.placeholder = 'Token saved in this browser';
+      setGistStatus('Gist sync: connected on this browser');
+    }
+    refreshShareId();
+    if (viewId()) setViewStatus('Shared library: connected (read-only)');
+  } catch (e) { console.warn('Cloud popup init:', e); }
+}
+
+function closeCloudModal() {
+  const modal = document.getElementById('cloud-storage-modal');
+  modal.classList.add('opacity-0');
+  setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+async function pasteInto(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  try {
+    const t = await navigator.clipboard.readText();
+    el.value = (t || '').trim();
+    el.focus();
+    notify(el.value ? 'Pasted' : 'Clipboard is empty');
+  } catch (e) {
+    el.focus();
+    notify('Your browser blocked the paste button. Click the box and press Ctrl+V.');
+  }
+}
+
+function useSavedToken() {
+  const src = document.getElementById('gist-token-copy');
+  const inp = document.getElementById('gist-token-input');
+  if (!src || !inp) return;
+  inp.value = src.value;
+  gistConnect();
+}
+
+function copyGistToken() {
+  const el = document.getElementById('gist-token-copy');
+  if (!el) return;
+  const done = () => notify('Token copied. Paste it in GitHub Gist sync below.');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(el.value).then(done, () => { el.select(); document.execCommand('copy'); done(); });
+  } else { el.select(); document.execCommand('copy'); done(); }
+}
+
+// ===== LuaVault: upload -> AI analysis -> poster -> library -> download =====
+const LIB_KEY='luavault:library', CAT_MAP={game:'realms',utility:'serenity',visual:'twilight'}, CAT_LABEL={game:'Game',utility:'Utility',visual:'Visual'};
+function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function hashCode(t){let h=5381;for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))>>>0;return h}
+function notify(msg,sticky){const t=document.getElementById('copy-toast');document.getElementById('toast-message').innerText=msg;t.classList.add('show');if(toastTimeout)clearTimeout(toastTimeout);if(!sticky)toastTimeout=setTimeout(()=>t.classList.remove('show'),3500)}
+
+function loadLib(){
+  try{return JSON.parse(localStorage.getItem(LIB_KEY)||'[]')}catch(e){return []}
+}
+
+// One Firestore document per script (keeps each under the 1 MB limit)
+const CLOUD_COL='luavault_scripts';
+const cloudSent={};
+function cloudPayload(it){
+  const o=JSON.parse(JSON.stringify(it));
+  const big=v=>typeof v==='string'&&v.length>600000;
+  if(big(o.src))o.src='';
+  if(big(o.fallback))o.fallback='';
+  return o;
+}
+function cloudPush(){
+  if(!(useCloudDb&&db))return;
+  galleryData.filter(x=>!x.shared).forEach(it=>{
+    const p=cloudPayload(it),str=JSON.stringify(p);
+    if(str.length>950000){console.warn('Too large for cloud, kept local only:',it.title);return}
+    if(cloudSent[it.id]===str)return;
+    cloudSent[it.id]=str;
+    db.collection(CLOUD_COL).doc(String(it.id)).set(p).catch(err=>{delete cloudSent[it.id];console.warn('Cloud sync save error:',err)});
+  });
+}
+function mergeLib(incoming){
+  const out=new Map();
+  galleryData.forEach(x=>out.set(String(x.id),x));
+  incoming.forEach(r=>{
+    const l=out.get(String(r.id));
+    if(l&&(l.updated||0)>(r.updated||0))return;
+    if(l){if(!r.src&&l.src)r.src=l.src;if(!r.fallback&&l.fallback)r.fallback=l.fallback}
+    out.set(String(r.id),r);
+  });
+  const seen=new Set(),list=[];
+  [...out.values()].sort((a,b)=>b.id-a.id).forEach(x=>{if(x.hash!=null){if(seen.has(x.hash))return;seen.add(x.hash)}list.push(x)});
+  galleryData=list;
+}
+function saveLib(){
+  let ok=true;
+  try{localStorage.setItem(LIB_KEY,JSON.stringify(galleryData.filter(x=>!x.shared)))}catch(e){ok=false}
+  cloudPush();
+  gistSchedule();
+  return ok||useCloudDb||!!gistToken();
+}
+
+function initRealtimeSync() {
+  if (!(useCloudDb && db)) return;
+  db.collection(CLOUD_COL).onSnapshot(snap => {
+    snap.docChanges().forEach(ch => {
+      if (ch.type === 'removed') {
+        const rid = String(ch.doc.id);
+        galleryData = galleryData.filter(x => String(x.id) !== rid);
+        delete cloudSent[rid];
+      }
+    });
+    const remote = snap.docs.map(d => d.data());
+    remote.forEach(r => { cloudSent[r.id] = JSON.stringify(cloudPayload(r)); });
+    mergeLib(remote);
+    try { localStorage.setItem(LIB_KEY, JSON.stringify(galleryData.filter(x=>!x.shared))); } catch(e) {}
+    updateCount();
+    renderLibrary();
+    const galleryModal = document.getElementById('pulse-gallery-modal');
+    if (galleryModal && !galleryModal.classList.contains('hidden')) renderGallery(galleryData);
+    cloudPush(); // uploads anything that only exists in this browser
+  }, err => {
+    console.warn('Realtime listener error:', err);
+    notify('Cloud sync error: check your Firestore rules / config');
+  });
+}
+
+// ===== GitHub Gist sync (free, works in every browser once you paste your token) =====
+const GIST_TOKEN_KEY='luavault:gist_token', GIST_ID_KEY='luavault:gist_id', GIST_DESC='LuaVault Library (do not delete)';
+const gistSent={},gistCache={};let gistTimer=null,gistBusy=false,gistAgain=false,gistEtag='',lastGhEtag='',gistBusySince=0,lastDiagAt=0,lastDiagMsg='';
+function gistToken(){try{return localStorage.getItem(GIST_TOKEN_KEY)||''}catch(e){return ''}}
+function setGistStatus(msg){
+  const el=document.getElementById('gist-status');if(el)el.innerText=msg;
+  const hs=document.getElementById('hero-connect-status'),hl=document.getElementById('hero-connect-label'),hi=document.getElementById('hero-connect-icon'),hb=document.getElementById('hero-connect-btn');
+  if(!hl)return;
+  const m=String(msg||'').replace(/^Gist sync:\s*/,'');
+  const connecting=/connecting|checking connection|loading/i.test(m);
+  document.documentElement.classList.toggle('lua-connect-lock',connecting);
+  document.body.classList.toggle('lua-connect-lock',connecting);
+  let label='Connect',icon='fa-cloud-arrow-up',cls='text-gray-300';
+  if(/connecting/i.test(m)){label='Connecting...';icon='fa-spinner fa-spin';cls='text-cyan-300'}
+  else if(/fail|invalid|network|rejected|error/i.test(m)){label='Retry connect';icon='fa-rotate-right';cls='text-rose-400'}
+  else if(/not connected/i.test(m)){}
+  else if(/connected/i.test(m)){label='Connected';icon='fa-circle-check';cls='text-emerald-400'}
+  hl.innerText=label;hi.className='fas '+icon;
+  if(hb)hb.classList.toggle('is-busy',label==='Connecting...');
+  const hm=document.getElementById('hero-manual');if(hm)hm.classList.toggle('hidden',label!=='Retry connect');
+  if(hs){hs.innerText=m;hs.className='text-xs sm:text-sm font-mono text-center min-h-[1.25rem] max-w-2xl '+cls}
+}
+const GIST_AUTO_TOKEN="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";
+async function heroConnect(auto){
+  if(gistBusy&&Date.now()-gistBusySince>60000)gistBusy=false;
+  if(gistBusy){notify('Still connecting, please wait...');return}
+  setGistStatus('Gist sync: connecting...');
+  try{
+    if(!gistToken()){
+      gistEtag='';
+      try{localStorage.removeItem(GIST_KNOWN_KEY);localStorage.removeItem(GIST_ID_KEY);localStorage.setItem(GIST_TOKEN_KEY,GIST_AUTO_TOKEN)}
+      catch(e){setGistStatus('Gist sync failed: your browser blocked storage, so the connection cannot be saved.');return}
+    }
+    await gistSync(!auto);
+  }catch(e){setGistStatus('Gist sync failed: '+((e&&e.message)||'unexpected error'))}
+}
+function copyAutoToken(){
+  const done=()=>notify('Token copied. Paste it in the box below, then press Connect manually.');
+  const fallback=()=>{const t=document.createElement('textarea');t.value=GIST_AUTO_TOKEN;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();try{document.execCommand('copy');done()}catch(e){notify('Could not copy automatically. Use the full settings to copy it.')}t.remove()};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(GIST_AUTO_TOKEN).then(done,fallback);
+  else fallback();
+}
+function heroManualConnect(){
+  const src=document.getElementById('hero-manual-token'),dst=document.getElementById('gist-token-input');
+  if(!src||!dst)return;
+  if(!src.value.trim()){notify('Paste your GitHub token first');return}
+  dst.value=src.value;src.value='';
+  gistConnect();
+}
+async function gh(path,opts){
+  opts=opts||{};
+  const headers={'Accept':'application/vnd.github+json'};
+  if(gistToken())headers['Authorization']='Bearer '+gistToken();
+  if(opts.body)headers['Content-Type']='application/json';
+  if(opts.etag)headers['If-None-Match']=opts.etag;
+  let r,netErr=null;
+  for(let attempt=0;attempt<2;attempt++){
+    const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),20000);
+    try{r=await fetch('https://api.github.com'+path,{method:opts.method||'GET',headers,body:opts.body,signal:ctl.signal,cache:'no-store'});clearTimeout(to);netErr=null;break}
+    catch(e){clearTimeout(to);netErr=e;if(attempt===0)await new Promise(res=>setTimeout(res,1200))}
+  }
+  if(netErr)throw new Error('network ('+(netErr.name==='AbortError'?'timed out':'request blocked')+')');
+  if(r.status===304)return {__nm:true};
+  lastGhEtag=r.headers.get('etag')||'';
+  if(!r.ok){
+    let m='';try{m=(await r.json()).message||''}catch(e){}
+    const sc=r.headers.get('x-oauth-scopes');
+    const err=new Error((r.status===401?'auth':'http '+r.status)+(m?' - '+m:'')+(sc!==null?' [token scopes: '+(sc||'none')+']':''));
+    err.status=r.status;throw err;
+  }
+  return r.json();
+}
+function gistPayload(it){
+  const o=JSON.parse(JSON.stringify(it));
+  if(typeof o.src==='string'&&o.src.length>400000)o.src='';
+  if(typeof o.fallback==='string'&&o.fallback.length>400000)o.fallback='';
+  if(o.fallback===o.src)delete o.fallback;
+  return o;
+}
+async function gistEnsure(){
+  let id='';try{id=localStorage.getItem(GIST_ID_KEY)||''}catch(e){}
+  if(id)return id;
+  const found=[];
+  for(let page=1;page<=5;page++){
+    const list=await gh('/gists?per_page=100&page='+page);
+    list.forEach(g=>{if(g.description===GIST_DESC)found.push(g)});
+    if(list.length<100)break;
+  }
+  if(found.length){found.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));id=found[0].id}
+  if(!id){
+    const g=await gh('/gists',{method:'POST',body:JSON.stringify({description:GIST_DESC,public:false,files:{'README.md':{content:'LuaVault library storage. Managed automatically by the LuaVault page.'}}})});
+    id=g.id;
+  }
+  try{localStorage.setItem(GIST_ID_KEY,id)}catch(e){}
+  return id;
+}
+const GIST_KNOWN_KEY='luavault:gist_known', GIST_PEND_KEY='luavault:gist_pending_delete';
+let gistRemoteIds=new Set();
+function getSet(k){try{return new Set(JSON.parse(localStorage.getItem(k)||'[]').map(String))}catch(e){return new Set()}}
+function setSet(k,set){try{localStorage.setItem(k,JSON.stringify([...set]))}catch(e){}}
+async function gistPull(){
+  const id=await gistEnsure();
+  const g=await gh('/gists/'+id,{etag:gistEtag});
+  if(g&&g.__nm)return;
+  gistEtag=lastGhEtag;
+  const pend=getSet(GIST_PEND_KEY),known=getSet(GIST_KNOWN_KEY);
+  const remote=[],remoteIds=new Set();
+  for(const [name,f] of Object.entries(g.files||{})){
+    const m=name.match(/^s_(.+)\.json$/);if(!m)continue;
+    remoteIds.add(m[1]);
+    if(pend.has(m[1]))continue;
+    const ck=f.raw_url||name;
+    let o=gistCache[ck];
+    if(!o){
+      let text=f.content;
+      if(f.truncated||text==null){const r=await fetch(f.raw_url,{cache:'no-store'});text=await r.text()}
+      try{o=JSON.parse(text)}catch(e){o=null}
+      if(o&&o.id!=null){if(!o.fallback&&o.src)o.fallback=o.src;gistCache[ck]=o}
+    }
+    if(o&&o.id!=null){const c=JSON.parse(JSON.stringify(o));remote.push(c);gistSent[c.id]=JSON.stringify(gistPayload(c))}
+  }
+  gistRemoteIds=remoteIds;
+  const sig=()=>galleryData.map(x=>x.id+'|'+x.title+'|'+(x.src||'').length).join(',');
+  const before=sig();
+  if(!g.truncated){
+    // scripts this browser already synced before, but that are gone from the gist = deleted in another browser
+    galleryData=galleryData.filter(x=>x.shared||!(known.has(String(x.id))&&!remoteIds.has(String(x.id))));
+    setSet(GIST_KNOWN_KEY,remoteIds);
+  }
+  if(remote.length)mergeLib(remote);
+  if(sig()===before)return;
+  try{localStorage.setItem(LIB_KEY,JSON.stringify(galleryData.filter(x=>!x.shared)))}catch(e){}
+  updateCount();renderLibrary();
+  const gm=document.getElementById('pulse-gallery-modal');
+  if(gm&&!gm.classList.contains('hidden'))renderGallery(galleryData);
+  notify('Library updated from another browser');
+}
+async function gistPush(){
+  const files={},sent={},pend=getSet(GIST_PEND_KEY);
+  galleryData.filter(x=>!x.shared).forEach(it=>{
+    const str=JSON.stringify(gistPayload(it));
+    if(gistSent[it.id]!==str){files['s_'+it.id+'.json']={content:str};sent[it.id]=str}
+  });
+  pend.forEach(pid=>{if(gistRemoteIds.has(pid))files['s_'+pid+'.json']=null});
+  if(!Object.keys(files).length){if(pend.size)setSet(GIST_PEND_KEY,new Set());return}
+  const id=await gistEnsure();
+  await gh('/gists/'+id,{method:'PATCH',body:JSON.stringify({files})});
+  Object.assign(gistSent,sent);
+  const known=getSet(GIST_KNOWN_KEY);
+  Object.keys(sent).forEach(k=>{known.add(String(k));gistRemoteIds.add(String(k))});
+  pend.forEach(pid=>{known.delete(pid);gistRemoteIds.delete(pid)});
+  setSet(GIST_KNOWN_KEY,known);setSet(GIST_PEND_KEY,new Set());
+  gistEtag='';
+}
+function deleteScript(id){
+  const it=galleryData.find(x=>x.id===id);if(!it)return;
+  if(it.shared){notify('Shared library is read-only.');return}
+  if(!confirm('Delete "'+(it.title||'this script')+'" from all your browsers?'))return;
+  galleryData=galleryData.filter(x=>x.id!==id);
+  const pend=getSet(GIST_PEND_KEY);pend.add(String(id));setSet(GIST_PEND_KEY,pend);
+  if(useCloudDb&&db)db.collection(CLOUD_COL).doc(String(id)).delete().catch(e=>console.warn('Cloud delete error:',e));
+  saveLib();updateCount();renderLibrary();renderGallery(galleryData);
+  notify('Script deleted');
+}
+// ===== Password gate for Delete / Edit name / Change poster =====
+const LIB_PW_HASH=660018210;
+function askLibPassword(actionText,onOk,force){
+  // Password (drmaviz) is asked ONCE per visit: after a correct entry every protected button works until this tab/page is closed.
+  try{if(sessionStorage.getItem('luavault:unlocked-session')==='1')window.__libUnlocked=true}catch(e){}
+  if(window.__libUnlocked){if(onOk){try{onOk()}catch(e){}}return Promise.resolve(true)} // already unlocked: run the action right away (keeps the file picker inside the click)
+  return new Promise(resolve=>{
+    const m=document.getElementById('pw-modal'),inp=document.getElementById('pw-input'),err=document.getElementById('pw-error');
+    document.getElementById('pw-action').innerText=actionText;
+    inp.value='';err.classList.add('hidden');err.textContent='Wrong password.';err.classList.remove('text-emerald-400');err.classList.add('text-rose-400');
+    m.classList.remove('hidden');m.classList.add('flex');
+    setTimeout(()=>inp.focus(),30);
+    const done=ok=>{m.classList.add('hidden');m.classList.remove('flex');inp.onkeydown=null;okBtn.onclick=null;cancelBtn.onclick=null;resolve(ok)};
+    const okBtn=document.getElementById('pw-ok'),cancelBtn=document.getElementById('pw-cancel');
+    let busy=false;
+    const msg=ok=>{err.textContent=ok?'Correct password ✓':'Wrong password.';err.classList.remove('hidden','text-rose-400','text-emerald-400');err.classList.add(ok?'text-emerald-400':'text-rose-400')};
+    const submit=()=>{
+      if(busy)return;
+      if(hashCode(inp.value)===LIB_PW_HASH){
+        busy=true;window.__libUnlocked=true;try{sessionStorage.setItem('luavault:unlocked-session','1')}catch(e){}
+        msg(true);                                   // show "Correct password" before the pop-up closes
+        setTimeout(()=>{if(onOk){try{onOk()}catch(e){}}done(true)},800);
+      }else{msg(false);inp.value='';inp.focus()}
+    };
+    okBtn.onclick=submit;cancelBtn.onclick=()=>{if(!busy)done(false)};
+    inp.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')submit();else if(e.key==='Escape'&&!busy)done(false)};
+  });
+}
+async function pwGuard(msg,fn){if(await askLibPassword(msg))return fn()}
+function gGemini(){return pwGuard('Enter the password to change the Gemini API key',()=>setGeminiKey())}
+function gClaude(){return pwGuard('Enter the password to change the Claude API key',()=>setAIKey())}
+function gExport(){return pwGuard('Enter the password to export a backup',()=>exportBackup())}
+function gImport(){return pwGuard('Enter the password to import a backup',()=>document.getElementById('backup-input').click())}
+function gAnalyse(){return pwGuard('Enter the password to run AI scan on existing Lua files',()=>analyseExistingLuaLibrary(true))}
+function gFill(){return pwGuard('Enter the password to fill game details',()=>fillAllGameDetails())}
+function gFixPosters(){return pwGuard('Enter the password to find missing posters',()=>fixMissingPosters())}
+function gAiPoster(id){return pwGuard('Enter the password to make an AI game poster',()=>generateAIPoster(id))}
+[['editScriptName','Enter the password to edit this name'],['changeScriptPoster','Enter the password to change this poster'],['deleteScript','Enter the password to delete this script']].forEach(([name,msg])=>{
+  const orig=window[name];
+  window[name]=async function(id){
+    const it=galleryData.find(x=>x.id===id);
+    if(it&&it.shared)return orig(id);
+    if(await askLibPassword(msg))return orig(id);
+  };
+});
+
+// ===== Delete ALL scripts (always asks the password) =====
+async function deleteAllScripts(){
+  const mine=galleryData.filter(x=>!x.shared);
+  if(!mine.length){notify(galleryData.length?'Shared library is read-only.':'Library is already empty.');return}
+  if(!(await askLibPassword('Enter the password to delete all '+mine.length+' script'+(mine.length===1?'':'s'),null,true)))return;
+  if(!confirm('Delete all '+mine.length+' script'+(mine.length===1?'':'s')+' from all your browsers? This cannot be undone.'))return;
+  const pend=getSet(GIST_PEND_KEY);
+  mine.forEach(it=>{
+    pend.add(String(it.id));
+    if(useCloudDb&&db)db.collection(CLOUD_COL).doc(String(it.id)).delete().catch(e=>console.warn('Cloud delete error:',e));
+  });
+  setSet(GIST_PEND_KEY,pend);
+  galleryData=galleryData.filter(x=>x.shared);
+  saveLib();updateCount();renderLibrary();renderGallery(galleryData);
+  notify('All scripts deleted');
+}
+
+async function gistDiagnose(){
+  const t=async(url,headers)=>{
+    const c=new AbortController();const to=setTimeout(()=>c.abort(),10000);
+    try{const r=await fetch(url,{headers,cache:'no-store',signal:c.signal});clearTimeout(to);return {ok:true,txt:'reached ('+r.status+')'}}
+    catch(e){clearTimeout(to);return {ok:false,txt:e&&e.name==='AbortError'?'timed out':'blocked'}}
+  };
+  const a=await t('https://api.github.com/zen');
+  const b=await t('https://api.github.com/rate_limit',{'Authorization':'Bearer '+gistToken(),'Accept':'application/vnd.github+json'});
+  const where=location.protocol==='file:'?'opened from a file on this computer':'opened from '+(location.origin&&location.origin!=='null'?location.origin:location.protocol);
+  let why;
+  if(!a.ok&&!b.ok)why='GitHub cannot be reached at all from this page. Most common reasons: the page is running inside a preview (open the downloaded file from your computer instead), a VPN/firewall/ISP blocks api.github.com, or an ad blocker is blocking it.';
+  else if(a.ok&&!b.ok)why='GitHub is reachable but requests that carry the token are blocked. An extension (privacy/ad blocker) is probably stripping them. Turn extensions off for this page or try a private window.';
+  else why='GitHub is reachable now. Press Connect again.';
+  return 'Test 1 plain request: '+a.txt+' | Test 2 with token: '+b.txt+' | Page '+where+'. '+why;
+}
+async function gistSync(manual){
+  if(!gistToken())return;
+  if(manual)gistEtag='';
+  if(gistBusy&&Date.now()-gistBusySince>60000)gistBusy=false;
+  if(gistBusy){gistAgain=true;return}
+  gistBusy=true;gistBusySince=Date.now();
+  try{
+    await gistPull();
+    await gistPush();
+    const t=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    let gid='';try{gid=(localStorage.getItem(GIST_ID_KEY)||'').slice(0,8)}catch(e){}
+    setGistStatus('Gist sync: connected | library '+gid+' | '+galleryData.filter(x=>!x.shared).length+' scripts | last sync '+t);
+    refreshShareId();
+    if(manual)notify('Gist sync complete');
+  }catch(e){
+    const em=(e&&e.message)||'unknown error';
+    let msg=em.startsWith('auth')?'GitHub says the token is invalid: '+em:'Gist sync failed: '+em;
+    if(em.startsWith('network')){
+      if(manual||Date.now()-lastDiagAt>120000){
+        setGistStatus('Gist sync: checking connection...');
+        try{msg='Gist sync failed: '+await gistDiagnose();lastDiagMsg=msg;lastDiagAt=Date.now()}catch(x){}
+      }else if(lastDiagMsg){msg=lastDiagMsg}
+    }
+    setGistStatus('Gist sync: '+msg);
+    if(manual||em.startsWith('auth'))notify(msg);
+  }finally{
+    gistBusy=false;
+    if(gistAgain){gistAgain=false;gistSchedule()}
+  }
+}
+function gistSchedule(){
+  if(!gistToken())return;
+  clearTimeout(gistTimer);
+  gistTimer=setTimeout(()=>gistSync(false),400);
+}
+async function gistConnect(){
+  const inp=document.getElementById('gist-token-input');
+  const t=inp.value.trim().replace(/^bearer\s+/i,'').replace(/^["']+|["']+$/g,'').replace(/\s+/g,'');
+  if(/^github_pat_/.test(t)){notify('That is a fine-grained token. Make a CLASSIC token (starts with ghp_) with the gist box ticked.');return}
+  if(t.length<20){notify('Paste your GitHub token first');return}
+  gistEtag='';try{localStorage.removeItem(GIST_KNOWN_KEY);localStorage.setItem(GIST_TOKEN_KEY,t);localStorage.removeItem(GIST_ID_KEY)}catch(e){notify('Browser blocked storage');return}
+  inp.value='';inp.placeholder='Token saved in this browser';
+  setGistStatus('Gist sync: connecting...');
+  await gistSync(true);
+}
+function gistDisconnect(){
+  gistEtag='';
+  try{localStorage.removeItem(GIST_TOKEN_KEY);localStorage.removeItem(GIST_ID_KEY);localStorage.removeItem(GIST_KNOWN_KEY)}catch(e){}
+  const inp=document.getElementById('gist-token-input');if(inp)inp.placeholder='ghp_...';
+  setGistStatus('Gist sync: not connected');
+  notify('Gist sync disconnected on this browser');
+}
+async function gistWipe(){
+  if(!gistToken()){notify('Connect Gist sync first');return}
+  if(!(await askLibPassword('Enter the password to delete ALL Gist files')))return;
+  if(!confirm('Delete ALL scripts from your Gist AND from this browser?\n\nThis cannot be undone. Other browsers that still hold copies will upload them again the next time they sync, so clear those too.'))return;
+  gistBusy=true;gistBusySince=Date.now();
+  try{
+    notify('Deleting all Gist files…',true);
+    const id=await gistEnsure();
+    const g=await gh('/gists/'+id);
+    const files={};let n=0;
+    Object.keys(g.files||{}).forEach(name=>{if(name!=='README.md'&&name!=='ai-keys.json'){files[name]=null;n++}});
+    if(n)await gh('/gists/'+id,{method:'PATCH',body:JSON.stringify({files})});
+    // clear this browser too, otherwise the next sync would upload everything again
+    const mine=galleryData.filter(x=>!x.shared);
+    if(useCloudDb&&db)mine.forEach(it=>db.collection(CLOUD_COL).doc(String(it.id)).delete().catch(()=>{}));
+    galleryData=galleryData.filter(x=>x.shared);
+    try{localStorage.removeItem(GIST_KNOWN_KEY);localStorage.removeItem(GIST_PEND_KEY)}catch(e){}
+    Object.keys(gistSent).forEach(k=>delete gistSent[k]);gistRemoteIds=new Set();gistEtag='';
+    saveLib();updateCount();renderLibrary();try{renderGallery(galleryData)}catch(e){}
+    notify('Deleted '+n+' Gist file'+(n===1?'':'s')+' and cleared this browser\'s library');
+  }catch(e){
+    notify('Could not delete Gist files: '+((e&&e.message)||'unknown error'));
+  }finally{gistBusy=false}
+}
+setInterval(()=>{if(gistToken()&&!document.hidden)gistSync(false)},8000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)gistSync(false)});
+
+// ===== Shared (read-only) library: view someone else's gist with just its ID, no token =====
+const GIST_VIEW_KEY='luavault:shared_gist';
+let viewBusy=false,lastView=0,viewEtag='';
+function viewId(){try{return localStorage.getItem(GIST_VIEW_KEY)||''}catch(e){return ''}}
+function setViewStatus(m){const el=document.getElementById('view-status');if(el)el.innerText=m}
+function refreshShareId(){
+  const el=document.getElementById('gist-share-id');if(!el)return;
+  let id='';try{id=localStorage.getItem(GIST_ID_KEY)||''}catch(e){}
+  el.value=id;
+}
+function copyShareId(){
+  const el=document.getElementById('gist-share-id');
+  if(!el||!el.value){notify('Connect Gist sync first to get your library ID');return}
+  (navigator.clipboard?navigator.clipboard.writeText(el.value):Promise.reject()).then(()=>notify('Library ID copied'),()=>{el.select();document.execCommand('copy');notify('Library ID copied')});
+}
+function applyShared(remote){
+  const mine=galleryData.filter(x=>!x.shared);
+  const have=new Set(mine.map(x=>x.hash));
+  const sh=remote.filter(r=>!have.has(r.hash)).map(r=>Object.assign(r,{shared:true}));
+  galleryData=[...mine,...sh].sort((a,b)=>b.id-a.id);
+}
+async function viewSync(manual){
+  const id=viewId();if(!id)return;
+  if(viewBusy)return;
+  if(!manual&&Date.now()-lastView<25000)return;
+  viewBusy=true;
+  try{
+    const g=await gh('/gists/'+id,{etag:manual?'':viewEtag});
+    if(g&&g.__nm){lastView=Date.now();viewBusy=false;return}
+    viewEtag=lastGhEtag;
+    const remote=[];
+    for(const [name,f] of Object.entries(g.files||{})){
+      if(!/^s_.*\.json$/.test(name))continue;
+      let text=f.content;
+      if(f.truncated||text==null){const r=await fetch(f.raw_url);text=await r.text()}
+      try{const o=JSON.parse(text);if(o&&o.id!=null)remote.push(o)}catch(e){}
+    }
+    const sig=()=>galleryData.map(x=>x.id+'|'+x.title+'|'+(x.src||'').length+(x.shared?'s':'')).join(',');
+    const before=sig();
+    applyShared(remote);
+    lastView=Date.now();
+    if(sig()!==before){
+      updateCount();renderLibrary();
+      const gm=document.getElementById('pulse-gallery-modal');
+      if(gm&&!gm.classList.contains('hidden'))renderGallery(galleryData);
+    }
+    setViewStatus('Shared library: '+remote.length+' script'+(remote.length===1?'':'s')+' (read-only)');
+    if(manual)notify('Shared library loaded: '+remote.length+' scripts');
+  }catch(e){
+    const em=(e&&e.message)||'error';
+    const msg=em.indexOf('404')>-1?'No library found with that ID. Check the ID.':em.indexOf('403')>-1?'GitHub limit reached. Try again in an hour.':'Could not load shared library: '+em;
+    setViewStatus('Shared library: '+msg);
+    if(manual)notify(msg);
+  }finally{viewBusy=false}
+}
+function viewConnect(){
+  const inp=document.getElementById('view-id-input');
+  const id=(inp.value||'').trim().replace(/^.*\//,'');
+  if(!/^[0-9a-zA-Z]{8,64}$/.test(id)){notify('Paste the library ID your friend sent you');return}
+  try{localStorage.setItem(GIST_VIEW_KEY,id)}catch(e){notify('Browser blocked storage');return}
+  inp.value='';setViewStatus('Shared library: loading...');
+  viewSync(true);
+}
+function viewDisconnect(){
+  try{localStorage.removeItem(GIST_VIEW_KEY)}catch(e){}
+  galleryData=galleryData.filter(x=>!x.shared);
+  updateCount();renderLibrary();
+  const gm=document.getElementById('pulse-gallery-modal');
+  if(gm&&!gm.classList.contains('hidden'))renderGallery(galleryData);
+  setViewStatus('Shared library: not connected');
+  notify('Stopped viewing the shared library');
+}
+setInterval(()=>{if(!document.hidden)viewSync(false)},30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)viewSync(false)});
+(function(){const m=(location.hash||'').match(/lib=([0-9a-zA-Z]{8,64})/);if(m){try{localStorage.setItem(GIST_VIEW_KEY,m[1])}catch(e){}}})();
+
+// ===== Backup file =====
+function exportBackup(){
+  const data={app:'luavault',version:1,exported:new Date().toISOString(),scripts:galleryData.filter(x=>!x.shared)};
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));
+  a.download='luavault-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();a.remove();
+  notify('Backup downloaded. Keep it somewhere safe.');
+}
+function importBackup(file){
+  if(!file)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(String(r.result));
+      const list=Array.isArray(d)?d:d.scripts;
+      if(!Array.isArray(list))throw new Error('bad file');
+      const have=new Set(galleryData.map(x=>x.hash));
+      const add=list.filter(x=>x&&x.id!=null&&x.code!=null&&!have.has(x.hash));
+      galleryData=[...galleryData,...add].sort((a,b)=>b.id-a.id);
+      saveLib();updateCount();renderLibrary();
+      const gm=document.getElementById('pulse-gallery-modal');
+      if(gm&&!gm.classList.contains('hidden'))renderGallery(galleryData);
+      notify('Imported '+add.length+' script'+(add.length===1?'':'s'));
+    }catch(e){notify('That file is not a valid LuaVault backup')}
+  };
+  r.onerror=()=>notify('Could not read that file');
+  r.readAsText(file);
+}
+
+function updateCount(){const el=document.getElementById('lib-count');if(el)el.innerText=galleryData.length+(galleryData.length===1?' script':' scripts');const gt=document.getElementById('gallery-total');if(gt)gt.innerText=galleryData.length}
+
+const GAMES=[[/counter.?strike\s*2|\bcs2\b/i,'Counter-Strike 2'],[/cs:?go|csgo/i,'Counter-Strike: Global Offensive'],[/garry'?s\s*mod|\bgmod\b|hook\.Add|surface\.Draw/i,"Garry's Mod"],[/\brust\b/i,'Rust'],[/left\s*4\s*dead/i,'Left 4 Dead 2'],[/payday\s*2/i,'PAYDAY 2'],[/terraria/i,'Terraria'],[/stardew/i,'Stardew Valley'],[/don'?t\s*starve/i,"Don't Starve Together"],[/project\s*zomboid/i,'Project Zomboid'],[/apex\s*legends/i,'Apex Legends'],[/\bdota\s*2\b/i,'Dota 2'],[/team\s*fortress/i,'Team Fortress 2'],[/\bgta\s*v\b|grand\s*theft\s*auto\s*v/i,'Grand Theft Auto V'],[/cyberpunk/i,'Cyberpunk 2077'],[/skyrim/i,'The Elder Scrolls V: Skyrim'],[/fallout\s*4/i,'Fallout 4'],[/elden\s*ring/i,'ELDEN RING'],[/cheat\s*engine|ce_/i,'']].filter(g=>g[1]);
+
+const AAA_GAMES=[[/red\s*dead\s*redemption\s*2|\brdr2\b/i,'Red Dead Redemption 2'],[/witcher\s*3|the\s*witcher/i,'The Witcher 3: Wild Hunt'],[/baldur'?s\s*gate\s*3|\bbg3\b/i,"Baldur's Gate 3"],[/hogwarts\s*legacy/i,'Hogwarts Legacy'],[/god\s*of\s*war/i,'God of War'],[/assassin'?s\s*creed/i,"Assassin's Creed"],[/far\s*cry\s*[3-6]/i,'Far Cry'],[/call\s*of\s*duty|\bwarzone\b|\bmw[23]\b/i,'Call of Duty'],[/battlefield\s*(?:1|2042|v|4|3)/i,'Battlefield'],[/\bvalorant\b/i,'VALORANT'],[/rainbow\s*six|\br6s\b/i,"Tom Clancy's Rainbow Six Siege"],[/\bpubg\b|battlegrounds/i,'PUBG: BATTLEGROUNDS'],[/\bfortnite\b/i,'Fortnite'],[/\bwarframe\b/i,'Warframe'],[/destiny\s*2/i,'Destiny 2'],[/\bhalo\s*(?:infinite|mcc|master)/i,'Halo Infinite'],[/dark\s*souls\s*(?:iii|3)/i,'DARK SOULS III'],[/dark\s*souls\s*(?:ii|2)/i,'DARK SOULS II'],[/dark\s*souls/i,'DARK SOULS: REMASTERED'],[/\bsekiro\b/i,'Sekiro: Shadows Die Twice'],[/monster\s*hunter\s*(?:world|rise)/i,'Monster Hunter'],[/resident\s*evil/i,'Resident Evil'],[/devil\s*may\s*cry/i,'Devil May Cry 5'],[/street\s*fighter\s*6/i,'Street Fighter 6'],[/\btekken\s*[78]\b/i,'TEKKEN 8'],[/mortal\s*kombat/i,'Mortal Kombat 1'],[/\bdiablo\s*(?:iv|4|iii|3)\b/i,'Diablo IV'],[/path\s*of\s*exile/i,'Path of Exile'],[/\blast\s*epoch\b/i,'Last Epoch'],[/world\s*of\s*warcraft|\bwow\b.{0,40}(?:addon|frame)/i,'World of Warcraft'],[/\boverwatch\b/i,'Overwatch 2'],[/rocket\s*league/i,'Rocket League'],[/\bforza\b/i,'Forza Horizon 5'],[/need\s*for\s*speed/i,'Need for Speed'],[/\bwitcher\b/i,'The Witcher 3: Wild Hunt'],[/mass\s*effect/i,'Mass Effect'],[/dragon\s*age/i,'Dragon Age'],[/starfield/i,'Starfield'],[/no\s*man'?s\s*sky/i,"No Man's Sky"],[/\bpalworld\b/i,'Palworld'],[/\blethal\s*company\b/i,'Lethal Company'],[/\bphasmophobia\b/i,'Phasmophobia'],[/\bhelldivers\s*2?\b/i,'HELLDIVERS 2'],[/black\s*myth.{0,3}wukong/i,'Black Myth: Wukong'],[/\bark:?\s*survival/i,'ARK: Survival Evolved'],[/\bdayz\b/i,'DayZ'],[/escape\s*from\s*tarkov|\btarkov\b/i,'Escape from Tarkov'],[/\bhunt:?\s*showdown/i,'Hunt: Showdown'],[/\bthe\s*finals\b/i,'THE FINALS'],[/\bdeadlock\b.{0,30}valve|\bdeadlock\b/i,'Deadlock'],[/\bsea\s*of\s*thieves/i,'Sea of Thieves'],[/\bsatisfactory\b/i,'Satisfactory'],[/\bfactorio\b/i,'Factorio'],[/\bsubnautica\b/i,'Subnautica'],[/\bhades\s*(?:ii|2)?\b.{0,20}supergiant/i,'Hades'],[/\bmount\s*(?:&|and)\s*blade/i,'Mount & Blade II: Bannerlord'],[/\bgta\s*(?:iv|4|online)\b|gta5|gtav/i,'Grand Theft Auto V'],[/\bsims\s*4\b/i,'The Sims 4'],[/\bapex\b.{0,20}legends/i,'Apex Legends'],[/\bmonster\s*hunter\b/i,'Monster Hunter: World'],[/\bnier\s*:?\s*automata/i,'NieR:Automata'],[/\bpersona\s*[345]\b/i,'Persona 5 Royal'],[/final\s*fantasy\s*(?:xiv|14|vii|7|xvi|16)/i,'FINAL FANTASY']];
+const GENERIC_EXE=/^(cheat\s*engine.*|lua.*|explorer|cmd|powershell|rundll32|svchost|conhost|notepad|steam|steamwebhelper|epicgameslauncher|battle\s*net|origin|launcher|game|client|server|main|unknown|python.*|node|curl|wget|taskkill|reg|regsvr32|wscript|cscript|mshta|msiexec|setup|install.*|update.*|unins.*|winlogon|dwm|csrss|system|roblox.*|fivem.*|chrome|firefox|msedge|discord|spotify|java.*|x64|x86)$/i;
+function extractGameHints(name,code){
+  const out=[],ids=[];const head=String(code||'').slice(0,80000);
+  const add=s=>{s=String(s||'').replace(/\s+/g,' ').trim().replace(/^[\s"'\[\]]+|[\s"'\].,;:]+$/g,'');if(s.length>=4&&s.length<=60&&!out.some(o=>o.toLowerCase()===s.toLowerCase()))out.push(s)};
+  try{
+    for(const m of head.matchAll(/store\.steampowered\.com\/app\/(\d{2,8})|steamcdn[^\s"']*\/apps\/(\d{2,8})\/|steam\/apps\/(\d{2,8})\/|\bsteam_?app_?id\s*[=:]\s*["']?(\d{3,8})\b/ig)){const v=parseInt(m[1]||m[2]||m[3]||m[4]);if(v&&!ids.includes(v))ids.push(v)}
+    for(const m of head.matchAll(/(?:^|\n)[ \t]*(?:--+|\/\/|#)[ \t\-\[=*]*(?:game(?:[ _]?name)?|target[ _]?game|supported[ _]?game|script[ _]?for|for[ _]?game|made[ _]?for)[ \t]*[:=\-][ \t]*["']?([^\r\n"']{3,60})/ig))add(m[1]);
+    for(const m of head.matchAll(/\b(?:game_?name|gamename|game_?title|gametitle|GAME_?NAME|GameName|GameTitle)\s*=\s*["']([^"'\r\n]{3,60})["']/g))add(m[1]);
+    for(const m of head.matchAll(/["']([\w\-. ]{3,50}?)\.exe["']/g)){const e=m[1].trim();if(!GENERIC_EXE.test(e))add(e)}
+    for(const m of head.matchAll(/(?:findWindow|FindWindow|getWindowTitle|windowTitle|window_title)\s*\([^)\n]{0,60}?["']([^"'\r\n]{4,60})["']/g))add(m[1]);
+  }catch(e){}
+  return {hints:out.slice(0,6),ids:ids.slice(0,3)};
+}
+function parseLoose(t){try{return JSON.parse(t)}catch(e){const m=String(t).match(/\{[\s\S]*\}/);if(m)return JSON.parse(m[0]);throw e}}
+function guessGame(name,code){const wide=name+'\n'+code.slice(0,60000);for(const [re,g] of AAA_GAMES)if(re.test(wide))return g;const t=name+'\n'+code.slice(0,6000);for(const [re,g] of GAMES)if(re.test(t))return g;return ''}
+let noKey=false;let lastAIError='';
+async function keyAI(q){
+  lastAIError='';let gk='',ak='';try{gk=localStorage.getItem('luavault:gemini-key')||'';ak=localStorage.getItem('luavault:key')||''}catch(e){}
+  try{
+    if(gk){
+      // gemini-2.5-flash was shut down by Google (Oct 2026, returns 404), so try the current models in order and remember the one that works.
+      const MODELS=['gemini-3.5-flash','gemini-flash-latest','gemini-3.1-flash-lite'];
+      let pref='';try{pref=localStorage.getItem('luavault:gemini-model')||''}catch(e){}
+      const order=(pref&&!/2\.5/.test(pref))?[pref].concat(MODELS.filter(x=>x!==pref)):MODELS;
+      const body=JSON.stringify({contents:[{parts:[{text:q}]}],generationConfig:{responseMimeType:'application/json',temperature:0.1,maxOutputTokens:8192}});
+      let r,j;
+      for(const model of order){
+        const url='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+encodeURIComponent(gk);
+        for(let t=0;t<4;t++){ // retry rate-limit / overload errors so batch uploads still get AI game names
+          r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body});j=await r.json().catch(()=>({}));
+          if(r.ok||![429,500,502,503,504].includes(r.status))break;
+          await new Promise(res=>setTimeout(res,2500*(t+1)));
+        }
+        if(r.ok){try{localStorage.setItem('luavault:gemini-model',model)}catch(e){}break}
+        const em=String(j?.error?.message||'');
+        if(r.status===404||(r.status===400&&/model/i.test(em)&&!/api key/i.test(em)))continue; // retired / unknown model: try the next one
+        break;
+      }
+      if(!r.ok){const detail=j?.error?.message||'';lastAIError='Gemini API error '+r.status+(detail?': '+detail:'');if(r.status===400||r.status===403)lastAIError='Gemini key rejected or API unavailable. Check your Google AI Studio key and project.';else if(r.status===429)lastAIError='Gemini quota/rate limit (429). Check your free-tier limits or billing.';return null}
+      const txt=(j.candidates||[]).flatMap(c=>c.content?.parts||[]).map(p=>p.text||'').join('').replace(/```json|```/g,'').trim();if(!txt){lastAIError='Gemini returned no text. Try another Lua file.';return null}return parseLoose(txt)
+    }
+    if(ak){
+      const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':ak,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-5-5',max_tokens:900,messages:[{role:'user',content:q}]})});
+      if(!r.ok){let detail='';try{detail=(await r.json()).error?.message||''}catch(e){};lastAIError='Anthropic API error '+r.status+(detail?': '+detail:'');if(r.status===401)lastAIError='API key rejected (401). Check your Anthropic key.';else if(r.status===429)lastAIError='Anthropic quota/rate limit (429). Check API billing and limits.';return null}
+      const j=await r.json();const txt=(j.content||[]).map(x=>x.text||'').join('').replace(/```json|```/g,'').trim();return parseLoose(txt)
+    }
+    lastAIError='No API key set. Add a Gemini key using the Gemini key button.';return null
+  }catch(e){lastAIError='Could not reach AI API or parse its response. Check internet access, API key, and browser console.';return null}
+}
+function setGeminiKey(){const entered=prompt('Paste your Google Gemini API key from https://aistudio.google.com/apikey. It is stored only in this browser. Press Cancel to keep the current key. To remove the saved key, enter REMOVE.');if(entered===null){notify('Cancelled. Your Gemini key was not changed.');return}const k=entered.trim();try{if(k.toUpperCase()==='REMOVE'){localStorage.removeItem('luavault:gemini-key');notify('Gemini API key removed.')}else if(k){localStorage.setItem('luavault:gemini-key',k);notify('Gemini API key saved. Upload a NEW Lua file to test Gemini.')}else{notify('No key entered. Your saved Gemini key was not changed.')}}catch(e){notify('Could not save Gemini key in this browser. Check browser storage settings.')}}
+function setAIKey(){const entered=prompt('Paste your Anthropic API key. It is stored only in this browser. Press Cancel to keep the current key. To remove the saved key, enter REMOVE.');if(entered===null){notify('Cancelled. Your Claude key was not changed.');return}const k=entered.trim();try{if(k.toUpperCase()==='REMOVE'){localStorage.removeItem('luavault:key');notify('Claude API key removed; Gemini will be used if configured, otherwise local analysis.')}else if(k){localStorage.setItem('luavault:key',k);notify('Anthropic API key saved. Upload a new Lua file to test it.')}else{notify('No key entered. Your saved Claude key was not changed.')}}catch(e){notify('Could not save Claude key in this browser. Check browser storage settings.')}}
+function localAnalyse(name,code){
+  const game=guessGame(name,code)||(/game:GetService|workspace|Players\.LocalPlayer|MarketplaceService|ReplicatedStorage/.test(code)?'Roblox':/RegisterNetEvent|Citizen\.|ESX|QBCore/.test(code)?'FiveM':/hook\.Add|surface\.|vgui\./.test(code)?"Garry's Mod":/love\./.test(code)?'LÖVE':'Unknown');
+  const cat=/aimbot|esp|kill|damage|weapon|farm|teleport|speed|fly/i.test(code)?'game':/draw|color|gui|ui|render|esp/i.test(code)?'visual':'utility';
+  const n=(code.match(/^\s*(local\s+)?function\s/gm)||[]).length;
+  const raw=String(name||'').replace(/\.(lua|luau|txt)$/i,'').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
+  const generic=!raw||/^(main|script|new script|lua|luau|untitled|file|download|unknown)$/i.test(raw);
+  const fn=(code.match(/(?:local\s+)?function\s+([\w.:]+)|([\w_]+)\s*=\s*function\s*\(/)||[]);
+  const inferred=fn[1]||fn[2]||(/aimbot|aim assist/i.test(code)?'Aim Assist':/esp|wallhack/i.test(code)?'ESP Overlay':/autofarm|auto farm/i.test(code)?'Auto Farm':/teleport/i.test(code)?'Teleport Tool':/admin/i.test(code)?'Admin Tools':'Game Utility');
+  const title=generic?(game!=='Unknown'?game+' '+inferred:inferred):raw;
+  return {title:title.slice(0,28)||'Lua Script',game,category:cat,description:`${game} script with ${n} function${n===1?'':'s'} and ${code.split('\n').length} lines.`,features:[],risk:'safe',riskNote:'',palette:['#0b0720','#4c1d95','#06b6d4'],motif:'rings'}
+}
+async function analyse(name,code){
+  const base=localAnalyse(name,code), hh=extractGameHints(name,code), head=code.length>18000?code.slice(0,12000)+'\n-- middle omitted --\n'+code.slice(-5000):code;
+  let ai=null;
+  // Build the prompt before attempting optional integrations. This ensures a failed or
+  // unavailable optional AI integration never prevents the configured Gemini API from running.
+  const q=`You are an expert at identifying which VIDEO GAME a Lua/Luau script belongs to. Read the actual source code, not just the filename. Infer the GAME TITLE from game IDs, PlaceId/UniverseId, comments, URLs, service names, remotes, item/weapon names, framework APIs and distinctive code patterns. Do not confuse the script's feature/name with the game name. If it is clearly a Roblox experience, identify the specific Roblox game if evidence exists; use "Roblox" only if the exact experience cannot be determined. If it is FiveM, identify the server/game only if evidence supports it; otherwise use "FiveM". Never invent a specific game. Set title to the exact game name when identified; if unknown, use a concise script name. Find a Steam app ID only if certain. Return ONLY valid JSON in this exact shape:
+{"title":"game name if identified, otherwise concise script name, max 40 chars","game":"exact game title or Roblox/FiveM/Garry's Mod/LÖVE/Unknown","steamAppId":0,"category":"game|utility|visual","description":"one sentence describing this Lua file","features":["up to 3 short labels"],"risk":"safe|caution","riskNote":"short explanation or empty","palette":["#0b0720","#4c1d95","#06b6d4"],"motif":"rings|blocks|lines"}
+File name: ${name}
+Detected clues in the file (verify against the code before trusting): ${hh.hints.length?hh.hints.join(' | '):'none'}${hh.ids.length?' | Steam app IDs: '+hh.ids.join(', '):''}
+Source length: ${code.length} characters. Use all visible source evidence; do not assume the filename is the game.
+LUA SOURCE START\n${head}\nLUA SOURCE END`;
+  try{
+    if(window.claude&&typeof window.claude.use==='function'){
+      try{const sample=await window.claude.use('sample');if(sample&&typeof sample.json==='function')ai=await sample.json(q,{cache:false});}catch(e){/* continue to configured API */}
+    }
+  }catch(e){}
+  if(!ai)ai=await keyAI(q);
+  const m=Object.assign({},base,ai&&typeof ai==='object'?ai:{});
+  m.title=String(m.title||base.title).slice(0,40);m.game=String(m.game||base.game).slice(0,60);m.steamAppId=parseInt(m.steamAppId)||0;
+  if(!CAT_MAP[m.category])m.category=base.category;
+  m.description=String(m.description||base.description).slice(0,160);
+  m.features=Array.isArray(m.features)?m.features.slice(0,3).map(x=>String(x).slice(0,22)):[];
+  if(!Array.isArray(m.palette)||m.palette.length<3||!m.palette.every(c=>/^#[0-9a-f]{6}$/i.test(c)))m.palette=base.palette;
+  if(!['rings','blocks','lines'].includes(m.motif))m.motif='rings';
+  const bad=/loadstring\s*\(\s*(game\s*:\s*)?HttpGet|discord(app)?\.com\/api\/webhooks|os\.execute|io\.popen/i.test(code);
+  if(bad&&m.risk!=='caution'){m.risk='caution';m.riskNote=m.riskNote||'Runs remote code or system commands.'}
+  m.risk=m.risk==='caution'?'caution':'safe';m.riskNote=String(m.riskNote||'').slice(0,90);
+  m.hints=hh.hints;m.hintIds=hh.ids;
+  m.aiUsed=!!ai;
+  if(!m.aiUsed&&lastAIError)m.aiError=lastAIError;
+  // When AI identifies a specific game, use that name as the library entry title.
+  if(m.game&&!PLATFORM_ONLY.test(m.game)&&m.game!=='Unknown')m.title=m.game.slice(0,40);
+  return m;
+}
+function wrapText(t,n){const l=[];let c='';t.split(/\s+/).forEach(w=>{if(c&&(c+' '+w).length>n){l.push(c);c=w}else c=(c?c+' ':'')+w});if(c)l.push(c);return l.slice(0,3)}
+function makePoster(m,seed){
+  const [a,b,c]=m.palette;let r=seed||1;const rnd=()=>(r=(r*1664525+1013904223)>>>0)/4294967296;let art='';
+  for(let i=0;i<16;i++){const x=(rnd()*960)|0,y=(rnd()*640)|0,s=(24+rnd()*130)|0;
+    if(m.motif==='rings')art+=`<circle cx="${x}" cy="${y}" r="${s}" fill="none" stroke="${c}" stroke-opacity=".28" stroke-width="2"/>`;
+    else if(m.motif==='blocks')art+=`<rect x="${x}" y="${y}" width="${s}" height="${s}" fill="${c}" fill-opacity=".12" stroke="${c}" stroke-opacity=".3" transform="rotate(${(rnd()*45)|0} ${x} ${y})"/>`;
+    else art+=`<line x1="${x}" y1="${y}" x2="${x+s*3}" y2="${y-s*3}" stroke="${c}" stroke-opacity=".3" stroke-width="3"/>`}
+  const lines=wrapText(m.title,16),fs=lines.length>2?60:76,y0=300-(lines.length-1)*fs*.5;
+  const title=lines.map((t,i)=>`<text x="56" y="${y0+i*fs*1.1}" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="${fs}" fill="#fff">${esc(t)}</text>`).join('');
+  const chips=(m.features.length?m.features:[CAT_LABEL[m.category]]).map((f,i)=>{const w=f.length*13+36,x=56+i*0;return {f,w}});
+  let cx=56;const chipSvg=chips.map(({f,w})=>{const o=`<rect x="${cx}" y="548" width="${w}" height="40" rx="20" fill="#000" fill-opacity=".45" stroke="${c}" stroke-opacity=".7"/><text x="${cx+w/2}" y="574" text-anchor="middle" font-family="monospace" font-size="18" fill="${c}">${esc(f)}</text>`;cx+=w+14;return o}).join('');
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient><radialGradient id="r" cx=".85" cy=".15" r=".8"><stop offset="0" stop-color="${c}" stop-opacity=".55"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient></defs><rect width="960" height="640" fill="url(#g)"/><rect width="960" height="640" fill="url(#r)"/>${art}<rect x="14" y="14" width="932" height="612" rx="26" fill="none" stroke="${c}" stroke-opacity=".5" stroke-width="2"/><text x="56" y="92" font-family="monospace" font-size="22" letter-spacing="6" fill="${c}">${esc(m.game.slice(0,30).toUpperCase())}</text><rect x="800" y="52" width="104" height="48" rx="24" fill="${c}"/><text x="852" y="85" text-anchor="middle" font-family="Arial,sans-serif" font-weight="800" font-size="24" fill="${a}">LUA</text>${title}${chipSvg}</svg>`;
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
+const PLATFORM_ONLY=/^(unknown|lua|roblox|fivem|l[oö]ve)$/i, STEAM_CDN='https://cdn.cloudflare.steamstatic.com/steam/apps/';
+function loadImg(u){return new Promise(res=>{const i=new Image(),t=setTimeout(()=>res(null),6000);i.onload=()=>{clearTimeout(t);res(i.naturalWidth>50?u:null)};i.onerror=()=>{clearTimeout(t);res(null)};i.src=u})}
+async function getJson1(u){const c=new AbortController(),t=setTimeout(()=>c.abort(),7000);try{const r=await fetch(u,{signal:c.signal});if(!r.ok)return null;const x=await r.text();try{return JSON.parse(x)}catch(e){return null}}catch(e){return null}finally{clearTimeout(t)}}
+// Direct request first, then several free CORS proxies (Steam's store API blocks direct browser requests).
+async function getJson(u,noProxy){
+  let j=await getJson1(u);if(j||noProxy)return j;
+  const proxies=[x=>'https://corsproxy.io/?'+encodeURIComponent(x),x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x),x=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(x),x=>'https://thingproxy.freeboard.io/fetch/'+x];
+  for(const px of proxies){j=await getJson1(px(u));if(j)return j}
+  return null;
+}
+function poNorm(x){return String(x||'').toLowerCase().replace(/[^a-z0-9]/g,'')}
+function termVariants(t){
+  t=String(t||'').replace(/\.(exe|lua|luau|txt)$/i,'').replace(/[-_. ]+(win64|win32|x64|x86|shipping|release|client|launcher|dx\d+)\b/ig,' ').replace(/[_\-.]+/g,' ');
+  const spaced=t.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/\s+/g,' ').trim(),clean=t.replace(/\s+/g,' ').trim();
+  return [...new Set([spaced,clean].filter(x=>x.length>=4))];
+}
+const STEAM_HOSTS=[STEAM_CDN,'https://cdn.akamai.steamstatic.com/steam/apps/','https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/','https://steamcdn-a.akamaihd.net/steam/apps/'];
+async function steamCover(id){
+  for(const f of ['library_600x900.jpg','header.jpg','capsule_616x353.jpg'])for(const h of STEAM_HOSTS){const u=await loadImg(h+id+'/'+f);if(u)return u}
+  return null;
+}
+async function steamNameById(id){
+  const u='https://store.steampowered.com/api/appdetails?appids='+id+'&filters=basic';
+  const j=await getJson(u);
+  return (j&&j[id]&&j[id].success&&j[id].data&&j[id].data.name)||'';
+}
+async function wikiPoster(term){
+  const k=poNorm(term);if(k.length<5)return null;
+  const u='https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrlimit=4&gsrsearch='+encodeURIComponent(term+' video game')+'&prop=pageimages&piprop=thumbnail&pithumbsize=700';
+  const j=await getJson(u);const pages=Object.values((j&&j.query&&j.query.pages)||{}).sort((a,b)=>(a.index||0)-(b.index||0));
+  for(const p of pages){
+    const clean=String(p.title||'').replace(/\s*\(.*?\)\s*$/,''),t=poNorm(clean);
+    if(!p.thumbnail||Math.min(t.length,k.length)<5)continue;
+    if(t===k||t.includes(k)||k.includes(t)){const url=await loadImg(p.thumbnail.source);if(url)return{url,name:clean,id:0,source:'Game cover art (Wikipedia)'}}
+  }
+  return null;
+}
+async function wikiSummaryPoster(term){
+  const k=poNorm(term);if(k.length<5)return null;
+  for(const title of [term+' (video game)',term]){
+    const j=await getJson('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(title.replace(/ /g,'_'))+'?redirect=true',true);
+    if(!j||j.type==='disambiguation'||!j.thumbnail)continue;
+    const t=poNorm(String(j.title||'').replace(/\s*\(.*?\)\s*$/,''));
+    if(!(t===k||(Math.min(t.length,k.length)>=5&&(t.includes(k)||k.includes(t)))))continue;
+    if(!/video game|game|simulat|role-playing|shooter|platform/i.test((j.description||'')+' '+(j.extract||'').slice(0,300)))continue;
+    const src=j.originalimage&&j.originalimage.source&&/\.(jpe?g|png)$/i.test(j.originalimage.source)?j.originalimage.source:j.thumbnail.source;
+    const url=await loadImg(j.thumbnail.source)||await loadImg(src);
+    if(url)return{url,name:String(j.title).replace(/\s*\(.*?\)\s*$/,''),id:0,source:'Game cover art (Wikipedia)'};
+  }
+  return null;
+}
+async function wikiGameInfo(term){
+  const k=poNorm(term);if(k.length<4)return null;
+  for(const title of [term+' (video game)',term]){
+    const j=await getJson('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(title.replace(/ /g,'_'))+'?redirect=true',true);
+    if(!j||j.type==='disambiguation'||!j.extract)continue;
+    const t=poNorm(String(j.title||'').replace(/\s*\(.*?\)\s*$/,''));
+    if(!(t===k||(Math.min(t.length,k.length)>=5&&(t.includes(k)||k.includes(t)))))continue;
+    if(!/game/i.test((j.description||'')+' '+j.extract.slice(0,400)))continue;
+    return{title:String(j.title).replace(/\s*\(.*?\)\s*$/,''),genre:String(j.description||'').slice(0,90),about:String(j.extract).split(/(?<=[.!?])\s+/).slice(0,3).join(' ').slice(0,420)};
+  }
+  return null;
+}
+async function steamPoster(m,fname){
+  const generic=PLATFORM_ONLY.test(m.game||'');
+  const fileTerm=(fname||'').replace(/\.(lua|luau|txt)$/i,'').replace(/[_\-.]+/g,' ').replace(/\b(esp|aimbot|script|scripts|hack|hacks|cheat|cheats|gui|hub|v\d+|lua|mod|free|op|autofarm|auto|farm)\b/ig,' ').replace(/\s+/g,' ').trim();
+  // Candidate game names, best evidence first: AI/local game name, clues found in the code, then the file name.
+  const cands=[];const push=t=>{termVariants(t).forEach(v=>{if(!cands.some(c=>poNorm(c)===poNorm(v)))cands.push(v)})};
+  if(!generic)push(m.game);
+  (m.hints||[]).forEach(push);
+  if(generic||!cands.length)push(fileTerm);
+  if(cands.length){const w=cands[0].split(' ');for(let k=w.length-1;k>=1&&k>=w.length-2;k--){const sh=w.slice(0,k).join(' ');if(sh.length>=5&&!cands.some(c=>poNorm(c)===poNorm(sh)))cands.push(sh)}}
+  // 1) Steam app id found directly inside the script
+  for(const id of (m.hintIds||[]).slice(0,2)){
+    const url=await steamCover(id);
+    if(url){const nm=await steamNameById(id);return{url,name:nm||(!generic?m.game:cands[0])||m.game,id,source:'Original Steam game artwork'}}
+  }
+  // 2) Steam store search for each candidate name
+  let searches=0;
+  for(const term of cands){
+    if(searches>=9)break;searches++;
+    const n=poNorm(term);if(n.length<4)continue;
+    const u='https://store.steampowered.com/api/storesearch/?term='+encodeURIComponent(term)+'&l=english&cc=us';
+    const j=await getJson(u);
+    const items=(j&&j.items)||[];
+    const hit=items.find(i=>poNorm(i.name)===n)||items.find(i=>{const k=poNorm(i.name);return Math.min(k.length,n.length)>=6&&(k.includes(n)||n.includes(k))})||items.find(i=>{const k=poNorm(i.name);return n.length>=5&&k.startsWith(n.slice(0,Math.max(5,Math.floor(n.length*.8))))});
+    if(hit){const url=await steamCover(hit.id);if(url)return{url,name:hit.name,id:hit.id,source:'Original Steam game artwork'}}
+  }
+  // 3) AI supplied Steam app id
+  if(!generic&&m.steamAppId){const url=await steamCover(m.steamAppId);if(url)return{url,name:m.game,id:m.steamAppId,source:'Original Steam game artwork'}}
+  // 4) Cover art from Wikipedia for games that are not on Steam
+  for(const term of cands.slice(0,4)){const w=await wikiPoster(term);if(w)return w}
+  for(const term of cands.slice(0,3)){const w=await wikiSummaryPoster(term);if(w)return w}
+  return null;
+}
+function goToPulse(){const b=document.getElementById('pulse-btn');if(b)b.scrollIntoView({behavior:'smooth',block:'center'});notify('Trigger the Energy Pulse to open your library')}
+function swapPoster(im,id){const it=galleryData.find(x=>x.id===id);if(it&&it.fallback){im.onerror=null;im.src=it.fallback}}
+function openUpload(){document.getElementById('lua-input').click()}
+function showExistsPopup(names,added){
+  const m=document.getElementById('exists-modal'),ul=document.getElementById('exists-list');
+  document.getElementById('exists-summary').textContent=(names.length>1?names.length+' files already exist':'This file already exists')+' in your library and '+(names.length>1?'were':'was')+' skipped. '+(added?('Only '+added+' new file'+(added>1?'s were':' was')+' added.'):'No new files were added.');
+  ul.innerHTML='';names.forEach(n=>{const li=document.createElement('li');li.textContent=n;ul.appendChild(li)});
+  m.classList.remove('hidden');m.style.display='flex';
+  const close=()=>{m.classList.add('hidden');m.style.display=''};
+  document.getElementById('exists-ok').onclick=close;
+  m.onclick=e=>{if(e.target===m)close()};
+}
+async function handleFiles(files){
+  let added=0,skipped=0,aiOff=0,noSteam=0;const existing=[];
+  let hasAIKey=false;try{hasAIKey=!!(localStorage.getItem('luavault:gemini-key')||localStorage.getItem('luavault:key'))}catch(e){}
+  if(files&&files.length&&!hasAIKey){
+    notify('AI needs a Gemini API key. Opening key setup…');
+    setGeminiKey();
+    try{hasAIKey=!!(localStorage.getItem('luavault:gemini-key')||localStorage.getItem('luavault:key'))}catch(e){}
+  }
+  for(const f of files){
+    if(f.size>1500000){skipped++;continue}
+    const code=await f.text(),h=hashCode(code);
+    const normName=n=>String(n||'').replace(/\.(lua|luau|txt)$/i,'').trim().toLowerCase();
+    if(galleryData.some(x=>x.hash===h||normName(x.filename)===normName(f.name))){skipped++;existing.push(f.name);continue}
+    notify('AI is analysing '+f.name+'…',true);
+    const m=await analyse(f.name,code);
+    // Resolve the game's official store name and original Steam artwork when available.
+    notify('Finding original game artwork for '+m.game+'…',true);
+    const st=await steamPoster(m,f.name);
+    if(st)m.game=st.name;
+    if(!m.aiUsed)aiOff++;
+    const named=!PLATFORM_ONLY.test(m.game);if(named&&!st)noSteam++;
+    const generated=makePoster(m,h),poster=st?st.url:generated;
+    const fname=f.name.replace(/\.(luau|txt)$/i,'')+(/\.lua$/i.test(f.name)?'':'.lua');
+    galleryData.unshift({id:Date.now()+added,hash:h,title:(!PLATFORM_ONLY.test(m.game)&&m.game!=='Unknown'?m.game:(m.title||f.name.replace(/\.(lua|luau|txt)$/i,''))),src:poster,fallback:generated,steam:!!st,posterSource:st?(st.source||'Original Steam game artwork'):'Generated game-themed poster (official artwork not found)',category:CAT_MAP[m.category],tag:m.game+' • '+CAT_LABEL[m.category]+(m.risk==='caution'?' • Caution':''),dialogue:m.description+(m.risk==='caution'&&m.riskNote?' Caution: '+m.riskNote:''),filename:fname,code,posterCustom:false,analysis:{game:m.game,features:m.features,risk:m.risk,riskNote:m.riskNote,aiUsed:!!m.aiUsed,aiError:m.aiError||'',posterSource:st?(st.source||'Original Steam game artwork'):'Generated game-themed poster'}});
+    added++;
+  }
+  if(added&&!saveLib()){notify('Added, but browser storage is full so it will not persist.');}
+  updateCount();renderLibrary();try{renderGallery(galleryData)}catch(e){}
+  if(added){
+    const aiMsg=aiOff?(' AI was not used for '+aiOff+' file(s). '+(!hasAIKey?'Add a valid Gemini API key to enable real AI analysis.':'Check the API key, quota, internet connection, and browser console; local fallback was used.')):'';
+    notify('Added '+added+' new script'+(added>1?'s':'')+(skipped?' ('+skipped+' existing/oversize skipped)':'')+(gistToken()||useCloudDb?' - syncing to your other browsers':' - saved in this browser only (connect Gist sync to share)')+aiMsg);
+  }
+  else notify(skipped?'Nothing added: file(s) already exist or are over 1.5 MB':'No file selected');
+  if(existing.length)showExistsPopup(existing,added);
+  if(added)setTimeout(()=>fillAllGameDetails(true),800);
+}
+async function analyseExistingLuaLibrary(forceAll=true){
+  const items=galleryData.filter(it=>typeof it.code==='string' && it.code.trim() && !it.shared && (forceAll || !it.analysis));
+  if(!items.length){notify('No locally stored Lua code to analyse. Re-upload Lua files to include their code.');return}
+  let done=0,failed=0;
+  for(const it of items){
+    try{
+      notify('AI analysing existing script '+(done+1)+'/'+items.length+': '+(it.filename||it.title),true);
+      const m=await analyse(it.filename||it.title||'script.lua',it.code);
+      const oldGame=(it.tag||'').split(' • ')[0];
+      // Preserve a previously identified game when this script's code is ambiguous.
+      m.game=m.game&&m.game!=='Unknown'?m.game:(oldGame||'Unknown');
+      const st=await steamPoster(m,it.filename||it.title||'');
+      if(st)m.game=st.name;
+      it.title=(!PLATFORM_ONLY.test(m.game)&&m.game!=='Unknown'?m.game:(m.title||it.title));
+      it.tag=m.game+' • '+(CAT_LABEL[m.category]||'Utility')+(m.risk==='caution'?' • Caution':'');
+      it.dialogue=m.description+(m.risk==='caution'&&m.riskNote?' Caution: '+m.riskNote:'');
+      it.category=CAT_MAP[m.category]||it.category;
+      it.analysis={game:m.game,features:m.features,risk:m.risk,riskNote:m.riskNote,aiUsed:m.aiUsed,aiError:m.aiError||''};
+      if(!it.posterCustom){const poster=makePoster(m,it.hash||it.id);it.fallback=poster;if(st){it.src=st.url;it.steam=true;it.posterSource=st.source||'Steam game artwork';}else{it.src=poster;it.steam=false;it.posterSource='Generated game-themed poster';}}
+      if(!m.aiUsed)failed++;
+      done++;
+    }catch(e){failed++}
+  }
+  saveLib();updateCount();renderLibrary();renderGallery(galleryData);
+  notify('Existing scripts analysed: '+done+(failed?' ('+failed+' used local fallback or AI failed)':'')+'. '+(failed?'If AI did not run, set a valid Gemini API key and check internet/API quota.':''));
+}
+async function fixMissingPosters(){
+  const items=galleryData.filter(it=>!it.shared&&!it.posterCustom&&!it.steam);
+  if(!items.length){notify('Every script already has real game artwork.');return}
+  let got=0,i=0;
+  for(const it of items){
+    i++;notify('Finding artwork '+i+'/'+items.length+': '+(it.title||it.filename),true);
+    try{
+      const game=(it.analysis&&it.analysis.game)||(it.tag||'').split(' • ')[0]||it.title;
+      const hh=it.code?extractGameHints(it.filename||it.title,it.code):{hints:[],ids:[]};
+      const m={game,hints:hh.hints,hintIds:hh.ids,steamAppId:0};
+      const st=await steamPoster(m,it.filename||it.title||'');
+      if(st){it.src=st.url;it.steam=true;it.posterSource=st.source||'Original Steam game artwork';if(it.analysis)it.analysis.posterSource=it.posterSource;it.updated=Date.now();got++}
+    }catch(e){}
+  }
+  saveLib();renderLibrary();try{renderGallery(galleryData)}catch(e){}
+  notify('Artwork found for '+got+' of '+items.length+' script(s). The rest keep their generated poster.');
+}
+async function generateAIPoster(id){
+  const it=galleryData.find(x=>String(x.id)===String(id));
+  if(!it){notify('Could not find that game/script');return}
+  try{
+    let m;
+    if(typeof it.code==='string'&&it.code.trim()){
+      notify('AI is identifying the game and designing its poster…',true);
+      m=await analyse(it.filename||it.title||'script.lua',it.code);
+    }else{
+      const game=(it.analysis&&it.analysis.game)||((it.tag||'').split(' • ')[0])||'Unknown';
+      m={title:it.title||'Lua Script',game,category:Object.keys(CAT_MAP).find(k=>CAT_MAP[k]===it.category)||'game',description:it.dialogue||'Game script',features:(it.analysis&&it.analysis.features)||[],palette:['#0b0720','#4c1d95','#06b6d4'],motif:'rings',risk:(it.analysis&&it.analysis.risk)||'safe',riskNote:(it.analysis&&it.analysis.riskNote)||'',steamAppId:0};
+    }
+    const oldGame=(it.analysis&&it.analysis.game)||((it.tag||'').split(' • ')[0]);
+    if(!m.game||m.game==='Unknown')m.game=oldGame||'Unknown';
+    const cover=await steamPoster(m,it.filename||it.title||'');
+    if(cover){it.src=cover.url;it.fallback=makePoster(m,it.hash||it.id);m.game=cover.name;it.posterSource=cover.source||'Steam game artwork';it.steam=true;}
+    else{it.src=makePoster(m,it.hash||it.id);it.fallback=it.src;it.posterSource='Generated game-themed poster';it.steam=false;}
+    it.posterCustom=false;
+    it.title=(!PLATFORM_ONLY.test(m.game)&&m.game!=='Unknown'?m.game:(m.title||it.title));
+    it.tag=m.game+' • '+(CAT_LABEL[m.category]||'Game')+(m.risk==='caution'?' • Caution':'');
+    it.dialogue=m.description||it.dialogue;
+    it.analysis={game:m.game,features:m.features||[],risk:m.risk||'safe',riskNote:m.riskNote||'',aiUsed:!!m.aiUsed,aiError:m.aiError||'',posterSource:it.posterSource};
+    it.updated=Date.now();saveLib();updateCount();renderLibrary();renderGallery(galleryData);
+    notify(cover?'Game artwork poster added for '+m.game:'Generated a game-themed poster for '+m.game+(m.aiUsed?'':' (local analysis used; add a valid Gemini key for AI naming)'));
+  }catch(e){notify('Poster generation failed. Try again or check your AI key and internet connection.')}
+}
+async function editScriptName(id){
+  const it=galleryData.find(x=>x.id===id);if(!it)return;if(it.shared){notify('Shared library is read-only. Download it or import it to edit.');return}
+  const pend=window.__pendingName&&window.__pendingName[id];if(pend!=null)delete window.__pendingName[id];
+  const next=pend!=null?pend:prompt('Enter the game name (AI will read it and fill in the game\'s details):',it.title||'');
+  if(next===null)return;const clean=next.trim().slice(0,80);
+  if(!clean){notify('Name cannot be empty');return;}
+  await applyGameName(id,clean,false);
+}
+// Reads a game name, identifies the game, fills details + tag + poster. quiet=true is used for bulk runs on already-named files.
+async function applyGameName(id,clean,quiet){
+  const it=galleryData.find(x=>x.id===id);if(!it||it.shared)return false;
+  it.title=clean;it.updated=Date.now();
+  if(!quiet){saveLib();renderLibrary();notify('AI is reading the name "'+clean+'" and identifying the game…',true)}
+  it.aiBusy=true;try{renderGallery(galleryData)}catch(e){}
+  try{
+    const oldA=it.analysis||{},code=it.code||'';
+    const catKey=({realms:'game',serenity:'utility',twilight:'visual'})[it.category]||'utility';
+    const base=localAnalyse(clean,code),hh=extractGameHints(clean,code);
+    // A bare number is often a Steam app ID: resolve it to the real game name first.
+    let gameName=clean,st=null;
+    const num=/^\d{3,9}$/.test(clean)?parseInt(clean):0;
+    if(num){st=await steamPoster({game:'Unknown',hints:[],hintIds:[num]},clean);if(st&&st.name)gameName=st.name}
+    const q=`A user named a Lua game-script file "${clean}"${gameName!==clean?' (this looks like the game "'+gameName+'")':''}. Work out which VIDEO GAME this name refers to (it may be a Steam, Roblox, FiveM or other game${num?'; a bare number may be a Steam app ID or Roblox place ID':''}). Then write detailed information about the game for a script library card. Do not invent facts; if you cannot identify the game say so briefly and describe it from the name only. Reply with ONLY JSON, no markdown:\n{"game":"exact game title or Unknown","steamAppId":0,"category":"game|utility|visual","description":"one-sentence summary of the game (max 160 chars)","genre":"genre and platform, e.g. Co-op survival shooter (Roblox)","about":"2-3 sentences: what the game is and what players do in it","specialty":"1-2 sentences: what makes this game special or distinctive","scriptUse":"1 sentence: what Lua scripts for this game typically do (e.g. auto-farm, ESP, UI tweaks)","features":["up to 3 short labels like genre or mode"],"palette":["#0b0720","#4c1d95","#06b6d4"],"motif":"rings|blocks|lines"}${hh.hints.length?'\nClues from the script code: '+hh.hints.join(' | '):''}`;
+    let ai=null;try{ai=await keyAI(q)}catch(e){}
+    const m=Object.assign({},base,ai&&typeof ai==='object'?ai:{});
+    m.game=String(m.game||'').slice(0,60);
+    if(!m.game||/^unknown$/i.test(m.game))m.game=gameName;
+    m.title=clean;m.steamAppId=parseInt(m.steamAppId)||0;
+    if(!CAT_MAP[m.category])m.category=catKey;
+    m.features=Array.isArray(m.features)?m.features.slice(0,3).map(x=>String(x).slice(0,22)):(oldA.features||[]);
+    if(!Array.isArray(m.palette)||m.palette.length<3||!m.palette.every(c=>/^#[0-9a-f]{6}$/i.test(c)))m.palette=base.palette;
+    if(!['rings','blocks','lines'].includes(m.motif))m.motif='rings';
+    m.hints=hh.hints;m.hintIds=num?[num].concat(hh.ids):hh.ids;
+    const gen=!ai||!ai.description;
+    const desc=String(gen?(m.game&&!PLATFORM_ONLY.test(m.game)?m.game+' script. '+(lastAIError?'(AI unavailable: '+lastAIError+')':'Add a Gemini API key so AI can describe this game\'s speciality.'):base.description):ai.description).slice(0,260);
+    if(!st&&!(quiet&&it.steam))st=await steamPoster(m,clean);
+    if(st&&st.name&&PLATFORM_ONLY.test(m.game))m.game=st.name;
+    const risk=oldA.risk||'safe',riskNote=oldA.riskNote||'';
+    const T=(v,n)=>String(v||'').trim().slice(0,n);
+    let wk=null;if(gen){try{wk=await wikiGameInfo(m.game&&!PLATFORM_ONLY.test(m.game)?m.game:clean)}catch(e){}}
+    if(wk){m.game=wk.title;}
+    it.details=gen?(wk?{genre:wk.genre,about:wk.about,specialty:'',scriptUse:'',features:[]}:null):{genre:T(ai.genre,90),about:T(ai.about,420),specialty:T(ai.specialty,300),scriptUse:T(ai.scriptUse,220),features:m.features};
+    it.tag=m.game+' • '+(CAT_LABEL[m.category]||'Utility')+(risk==='caution'?' • Caution':'');
+    it.dialogue=desc+(risk==='caution'&&riskNote?' Caution: '+riskNote:'');
+    it.category=CAT_MAP[m.category]||it.category;
+    const gp=makePoster(Object.assign({},m,{title:clean}),it.hash||id);
+    it.fallback=gp;
+    if(!it.posterCustom){if(st){it.src=st.url;it.steam=true;it.posterSource=st.source||'Original Steam game artwork'}else if(!it.steam){it.src=gp;it.steam=false;it.posterSource='Generated game-themed poster'}}
+    it.analysis={game:m.game,features:m.features,risk,riskNote,aiUsed:!gen,aiError:gen?(lastAIError||''):'',posterSource:it.posterSource};
+    it.updated=Date.now();it.aiBusy=false;
+    saveLib();if(!quiet)renderLibrary();try{renderGallery(galleryData)}catch(e){}
+    if(quiet)return !gen||!!it.details;
+    notify(gen?'Name saved. AI could not describe the game'+(lastAIError?' ('+lastAIError+')':' — add a Gemini API key')+'.':'Identified "'+m.game+'" and added its speciality'+(st?' with official artwork.':'.'));
+  }catch(e){it.aiBusy=false;try{saveLib();renderGallery(galleryData)}catch(_){}if(!quiet)notify('Name saved, but AI analysis failed. Check your key and internet connection.');return false}
+}
+let fillingAll=false;
+// Fill game details for every script that already has a name but no details yet.
+async function fillAllGameDetails(silent){
+  if(fillingAll){if(!silent)notify('Already filling game details…');return}
+  const items=galleryData.filter(it=>!it.shared&&!it.details&&!it.aiBusy&&String(it.title||'').trim());
+  if(!items.length){if(!silent)notify('Every script already has its game details.');return}
+  fillingAll=true;let ok=0,i=0;
+  try{
+    for(const it of items){
+      i++;if(!silent)notify('Filling game details '+i+'/'+items.length+': '+it.title,true);
+      let good=false;try{good=await applyGameName(it.id,String(it.title).trim().slice(0,80),true)}catch(e){}
+      if(good)ok++;
+      await new Promise(r=>setTimeout(r,1500)); // stay under AI rate limits
+    }
+  }finally{fillingAll=false}
+  try{renderLibrary();renderGallery(galleryData)}catch(e){}
+  if(!silent)notify('Game details added for '+ok+' of '+items.length+' script(s).'+(ok<items.length?' The rest could not be identified from their names — use AI fill on them with a clearer game name.':''));
+}
+function renameInline(id){
+  const el=document.getElementById('name-in-'+id);if(!el)return;
+  const v=el.value.trim();if(!v){notify('Type the game name first');el.focus();return}
+  window.__pendingName=window.__pendingName||{};window.__pendingName[id]=v;
+  editScriptName(id);
+}
+function changeScriptPoster(id){
+  const it=galleryData.find(x=>x.id===id);if(!it)return;if(it.shared){notify('Shared library is read-only. Download it or import it to edit.');return}
+  const picker=document.createElement('input');picker.type='file';picker.accept='image/*';
+  picker.onchange=()=>{const file=picker.files&&picker.files[0];if(!file)return;if(file.size>5*1024*1024){notify('Choose an image under 5 MB');return;}
+    const reader=new FileReader();reader.onload=()=>{it.src=String(reader.result);it.fallback=it.src;it.posterCustom=true;it.updated=Date.now();saveLib();renderLibrary();renderGallery(galleryData);notify('Custom poster saved');};reader.onerror=()=>notify('Could not read that image');reader.readAsDataURL(file);
+  };picker.click();
+}
+async function downloadLua(id){
+  const it=galleryData.find(x=>x.id===id);if(!it)return;
+  try{
+    const d=await window.claude?.use('downloads');
+    if(d){
+      try{await d.save({filename:it.filename,data:it.code})}
+      catch(e){if(e&&(e.code==='rejected_extension'||e.code==='extension_not_enabled'))await d.save({filename:it.filename+'.txt',data:it.code});else throw e}
+      notify('Saved '+it.filename);return;
+    }
+  }catch(e){if(e&&e.code==='declined')return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([it.code],{type:'text/plain'}));a.download=it.filename;document.body.appendChild(a);a.click();a.remove();
+}
+document.getElementById('backup-input').addEventListener('change',e=>{importBackup(e.target.files[0]);e.target.value=''});
+document.getElementById('lua-input').addEventListener('change',e=>{handleFiles([...e.target.files]);e.target.value=''});
+const dropCard=document.querySelector('#servers .tilt-card');
+['dragover','drop'].forEach(ev=>dropCard.addEventListener(ev,e=>{e.preventDefault();if(ev==='drop')handleFiles([...e.dataTransfer.files])}));
+// ===== Password gate for uploading (password: drmaviz) =====
+(function(){
+  const _openUpload=openUpload,_handleFiles=handleFiles;
+  let grantUntil=0; // one-shot: the password typed for the Upload button also covers the file picked right after it
+  window.openUpload=function(){
+    askLibPassword('Enter the password to upload Lua files',()=>{grantUntil=Date.now()+180000;_openUpload()}); // picker opens straight from the OK click
+  };
+  window.handleFiles=async function(files){
+    if(!files||!files.length)return;
+    if(Date.now()<grantUntil){grantUntil=0}
+    else if(!(await askLibPassword('Enter the password to upload Lua files')))return; // e.g. drag & drop
+    try{await window.keysReady}catch(e){}
+    return _handleFiles(files);
+  };
+})();
+
+// ===== Remember AI API keys (localStorage + IndexedDB backup) =====
+(function(){
+  const KEYS=['luavault:gemini-key','luavault:key'];
+  const open=()=>new Promise((res,rej)=>{const r=indexedDB.open('luavault-keys',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+  const idbGet=async n=>{const db=await open();return new Promise(res=>{const q=db.transaction('k').objectStore('k').get(n);q.onsuccess=()=>res(q.result||'');q.onerror=()=>res('')})};
+  const idbSet=async(n,v)=>{try{const db=await open();const st=db.transaction('k','readwrite').objectStore('k');v?st.put(v,n):st.delete(n)}catch(e){}};
+  const _set=Storage.prototype.setItem,_rem=Storage.prototype.removeItem;
+  Storage.prototype.setItem=function(k,v){_set.apply(this,arguments);if(this===window.localStorage&&KEYS.includes(k))idbSet(k,String(v))};
+  Storage.prototype.removeItem=function(k){_rem.apply(this,arguments);if(this===window.localStorage&&KEYS.includes(k))idbSet(k,'')};
+  window.keysReady=(async()=>{
+    try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
+    for(const n of KEYS){
+      try{
+        const cur=localStorage.getItem(n);
+        if(cur)idbSet(n,cur);                       // mirror saved key
+        else{const v=await idbGet(n);if(v)_set.call(localStorage,n,v)} // restore if browser lost it
+      }catch(e){}
+    }
+  })();
+})();
+
+// ===== Share AI API keys across ALL browsers/devices (stored in your private GitHub Gist) =====
+(function(){
+  const KEYS=['luavault:gemini-key','luavault:key'], FILE='ai-keys.json', TS='luavault:keys-ts';
+  const NAMES={'luavault:gemini-key':'Gemini','luavault:key':'Claude'};
+  const rawSet=Storage.prototype.setItem, rawRem=Storage.prototype.removeItem;
+  let pushTimer=null,pulling=false,lastPull=0,applying=false,pushing=false;
+  const removed=new Set();
+  const say=m=>{try{if(typeof notify==='function')notify(m)}catch(e){}};
+  const local=()=>{const o={};KEYS.forEach(k=>{try{o[k]=localStorage.getItem(k)||''}catch(e){o[k]=''}});return o};
+  const localTs=()=>{try{return +localStorage.getItem(TS)||0}catch(e){return 0}};
+  const connected=()=>typeof gistToken==='function'&&!!gistToken();
+  // Keys live in their OWN private gist (never the library gist), so sharing a library ID can never expose your API key.
+  const KG='luavault:keys_gist_id', KDESC='LuaVault AI Keys (private, never share)';
+  async function keysGist(create){
+    let id='';try{id=localStorage.getItem(KG)||''}catch(e){}
+    if(id)return id;
+    const found=[];
+    for(let page=1;page<=5;page++){const list=await gh('/gists?per_page=100&page='+page);list.forEach(g=>{if(g.description===KDESC)found.push(g)});if(list.length<100)break}
+    if(found.length){found.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));id=found[0].id}
+    if(!id&&create){const g=await gh('/gists',{method:'POST',body:JSON.stringify({description:KDESC,public:false,files:{[FILE]:{content:JSON.stringify({ts:0,keys:{}})}}})});id=g.id}
+    if(id){try{localStorage.setItem(KG,id)}catch(e){}}
+    return id;
+  }
+  async function readFile(id){
+    const g=await gh('/gists/'+id);
+    const f=g&&g.files&&g.files[FILE];
+    if(!f)return null;
+    let text=f.content;if(f.truncated||text==null){text=await (await fetch(f.raw_url,{cache:'no-store'})).text()}
+    let o={};try{o=JSON.parse(text)||{}}catch(e){}
+    return o;
+  }
+  async function readRemote(){
+    const id=await keysGist(false);
+    let o=id?await readFile(id):null,legacy='';
+    if(!o){ // older versions stored the keys inside the library gist: read them once, then move them
+      try{const lid=await gistEnsure();const old=await readFile(lid);if(old){o=old;legacy=lid}}catch(e){}
+    }
+    return{id,keys:(o&&o.keys)||{},ts:(o&&+o.ts)||0,exists:!!o,legacy};
+  }
+  async function push(announce){
+    if(pushing)return;
+    try{
+      if(!connected()){if(announce)say('Key saved in this browser only. Press Connect on the main page so it is shared with your other browsers.');return}
+      pushing=true;
+      const rem=await readRemote(),mine=local(),merged={};
+      // merge so a key saved in one browser never wipes the other key saved in another browser
+      KEYS.forEach(k=>{merged[k]=mine[k]?mine[k]:(removed.has(k)?'':(rem.keys[k]||''))});
+      const ts=Date.now();
+      const kid=rem.id||await keysGist(true);
+      await gh('/gists/'+kid,{method:'PATCH',body:JSON.stringify({files:{[FILE]:{content:JSON.stringify({ts,keys:merged})}}})});
+      if(rem.legacy){try{await gh('/gists/'+rem.legacy,{method:'PATCH',body:JSON.stringify({files:{[FILE]:null}})})}catch(e){}} // remove keys from the shareable library gist
+      rawSet.call(localStorage,TS,String(ts));removed.clear();
+      // if another browser had a key this one lacks, take it now
+      applying=true;try{KEYS.forEach(k=>{if(merged[k]&&!mine[k])rawSet.call(localStorage,k,merged[k])})}finally{applying=false}
+      if(announce)say('AI API key saved and shared with all your browsers.');
+    }catch(e){console.warn('AI key sync (push) failed:',e&&e.message);if(announce)say('Key saved here, but sharing failed ('+((e&&e.message)||'network')+'). Check the Connect button / GitHub token.')}
+    finally{pushing=false}
+  }
+  function schedulePush(){clearTimeout(pushTimer);pushTimer=setTimeout(()=>push(true),500)}
+  Storage.prototype.setItem=function(k,v){rawSet.apply(this,arguments);if(this===window.localStorage&&KEYS.includes(k)&&!applying){removed.delete(k);schedulePush()}};
+  Storage.prototype.removeItem=function(k){rawRem.apply(this,arguments);if(this===window.localStorage&&KEYS.includes(k)&&!applying){removed.add(k);schedulePush()}};
+  async function pull(force){
+    if(pulling||(!force&&Date.now()-lastPull<30000))return;
+    try{
+      if(!connected())return;
+      pulling=true;lastPull=Date.now();
+      if(window.keysReady)await window.keysReady;
+      const rem=await readRemote(),mine=local(),hasLocal=KEYS.some(k=>mine[k]);
+      if(rem.legacy){pulling=false;await push(false);return}
+      if(!rem.exists||!KEYS.some(k=>rem.keys[k])){ if(hasLocal)await push(false); return }
+      if(rem.ts>localTs()||!hasLocal){
+        let changed=[];
+        applying=true;
+        try{
+          KEYS.forEach(k=>{const v=rem.keys[k]||'';if(v&&v!==(mine[k]||'')){rawSet.call(localStorage,k,v);changed.push(NAMES[k])}else if(!v&&mine[k]&&rem.ts>localTs()){rawRem.call(localStorage,k);changed.push(NAMES[k]+' (removed)')}});
+          rawSet.call(localStorage,TS,String(rem.ts));
+        }finally{applying=false}
+        KEYS.forEach(k=>{try{const v=localStorage.getItem(k)||'';const r=indexedDB.open('luavault-keys',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');r.onsuccess=()=>{const st=r.result.transaction('k','readwrite').objectStore('k');v?st.put(v,k):st.delete(k)}}catch(e){}});
+        if(changed.length)say('AI API key loaded from your other browser: '+changed.join(', ')+'.');
+      }else if(KEYS.some(k=>mine[k]&&mine[k]!==(rem.keys[k]||''))){await push(false)}
+    }catch(e){console.warn('AI key sync (pull) failed:',e&&e.message)}
+    finally{pulling=false}
+  }
+  window.syncAIKeys=async()=>{lastPull=0;await pull(true);say('AI key sync checked.')};
+  // pull after every library sync (runs on connect, every 8s, and when the tab regains focus)
+  const origSync=window.gistSync;
+  if(typeof origSync==='function'){window.gistSync=async function(){const r=await origSync.apply(this,arguments);pull(false);return r}}
+  window.addEventListener('load',()=>{setTimeout(()=>pull(true),1200);setTimeout(()=>pull(true),6000)});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull(false)});
+})();
+
+function renderLibrary(){
+  const g=document.getElementById('library-grid');if(!g)return;g.innerHTML='';
+  if(!galleryData.length){g.innerHTML='<p class="col-span-full text-center text-gray-400 font-cormorant italic text-xl py-16 mag-text">Your library is empty. Upload a .lua file and the AI will shelve it here with its poster.</p>';return}
+  galleryData.forEach(it=>{
+    const c=document.createElement('div');
+    c.className='gallery-card glass-card rounded-3xl overflow-hidden group border border-white/10 hover:border-accentPurple transition-all duration-300 cursor-pointer flex flex-col';
+    c.onclick=()=>openLightbox(it.src,it.tag,it.dialogue);
+    c.innerHTML=`<div class="relative h-52 overflow-hidden bg-black/50"><img src="${esc(it.src)}" alt="${esc(it.title)}" class="w-full h-full object-cover"><div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent"></div><div class="absolute top-4 left-4"><span class="px-3 py-1 text-[10px] font-mono uppercase tracking-widest bg-black/70 backdrop-blur-md text-accentPurple rounded-full border border-accentPurple/40 mag-text">${esc(it.tag)}</span></div></div><div class="p-6 flex flex-col flex-1 justify-between space-y-4"><div class="space-y-2"><h3 class="text-xl font-syne font-bold text-white group-hover:text-accentPurple transition-colors mag-text">${esc(it.title)}</h3><p class="text-sm text-gray-400 font-light mag-text">${esc(it.dialogue)}</p><div class="flex gap-2 pt-3"><button onclick="event.stopPropagation();editScriptName(${it.id})" class="px-3 py-2 rounded-full text-[10px] uppercase border border-white/15 hover:border-accentPurple">Edit name</button><button onclick="event.stopPropagation();changeScriptPoster(${it.id})" class="px-3 py-2 rounded-full text-[10px] uppercase border border-white/15 hover:border-cyan-400">Change poster</button><button onclick="event.stopPropagation();generateAIPoster(${it.id})" class="px-3 py-2 rounded-full text-[10px] uppercase border border-cyan-400/40 text-cyan-200 hover:border-cyan-300">AI game poster</button><button onclick="event.stopPropagation();deleteScript(${it.id})" class="px-3 py-2 rounded-full text-[10px] font-semibold uppercase tracking-wider border border-white/15 text-rose-300 hover:border-rose-400">Delete</button></div></div><div class="pt-4 border-t border-white/10 flex items-center justify-between text-xs font-mono tracking-widest uppercase text-gray-400"><span class="mag-text">${esc(it.filename)}</span><button onclick="event.stopPropagation();downloadLua(${it.id})" class="px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider bg-gradient-to-r from-accentPurple to-accentViolet text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:shadow-[0_0_30px_rgba(168,85,247,0.8)] transition-all mag-text"><i class="fas fa-download"></i> Download</button></div></div>`;
+    const im=c.querySelector('img');if(it.fallback)im.onerror=()=>{im.onerror=null;im.src=it.fallback};g.appendChild(c);
+  });
+  bindHoverables();setupMagneticRepulsion();
+}
+
+galleryData.push(...loadLib());
+updateCount();
+renderLibrary();
+initRealtimeSync();
+setTimeout(()=>{if(galleryData.some(it=>typeof it.code==='string'&&it.code.trim()&&!it.analysis&&!it.shared))analyseExistingLuaLibrary(false)},1200);
+heroConnect(true);
+if(viewId())viewSync(false);
+
+</script>
+<button onclick="gGemini()" class="fixed bottom-16 left-4 z-[90] text-[10px] font-mono uppercase tracking-widest px-3 py-1.5 rounded-full bg-black/60 border border-cyan-400/30 text-cyan-200 hover:text-white mag-text">Gemini API key</button>
+<button onclick="gClaude()" class="fixed bottom-6 left-4 z-[90] text-[10px] font-mono uppercase tracking-widest px-3 py-1.5 rounded-full bg-black/60 border border-white/10 text-gray-400 hover:text-white mag-text">Claude API key</button>
+<style>
+/* ===== Button click feedback: press, ripple, busy spinner ===== */
+button{transition:transform .12s ease,filter .15s ease,box-shadow .2s ease}
+button:not(:disabled):hover{filter:brightness(1.15)}
+button:not(:disabled):active{transform:scale(.93);filter:brightness(1.35)}
+button:focus-visible{outline:2px solid #22d3ee;outline-offset:2px}
+.lv-rwrap{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}
+.lv-ripple{position:absolute;border-radius:50%;pointer-events:none;background:rgba(255,255,255,.45);transform:scale(0);animation:lvripple .6s ease-out forwards}
+@keyframes lvripple{to{transform:scale(1);opacity:0}}
+.lv-busy{pointer-events:none;opacity:.8;animation:lvpulse 1s ease-in-out infinite}
+.lv-busy::before{content:'';display:inline-block;width:.9em;height:.9em;margin-right:.5em;vertical-align:-.12em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:lvspin .7s linear infinite}
+@keyframes lvspin{to{transform:rotate(360deg)}}
+@keyframes lvpulse{50%{box-shadow:0 0 18px rgba(34,211,238,.65)}}
+@media (prefers-reduced-motion:reduce){.lv-ripple,.lv-busy,.lv-busy::before{animation:none}button:not(:disabled):active{transform:none}}
+</style>
+<script>
+(function(){
+  // Ripple + press feedback on every button, so you always see that a click registered
+  document.addEventListener('pointerdown',e=>{
+    const b=e.target.closest&&e.target.closest('button');if(!b||b.disabled)return;
+    window.__lastBtn=b;
+    try{
+      if(getComputedStyle(b).position==='static')b.style.position='relative';
+      const r=b.getBoundingClientRect(),d=Math.max(r.width,r.height)*2,rp=document.createElement('span'),wr=document.createElement('span');
+      wr.className='lv-rwrap';rp.className='lv-ripple';rp.style.width=rp.style.height=d+'px';
+      rp.style.left=(e.clientX-r.left-d/2)+'px';rp.style.top=(e.clientY-r.top-d/2)+'px';
+      wr.appendChild(rp);b.appendChild(wr);setTimeout(()=>wr.remove(),650);
+    }catch(_){}
+  },true);
+  document.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const b=document.activeElement;if(b&&b.tagName==='BUTTON')window.__lastBtn=b}},true);
+  // Spinner + "working" look on the clicked button while an async action runs
+  const wrap=name=>{
+    const orig=window[name];if(typeof orig!=='function')return;
+    window[name]=async function(){
+      const btn=window.__lastBtn&&document.contains(window.__lastBtn)?window.__lastBtn:null;
+      if(btn)btn.classList.add('lv-busy');
+      try{return await orig.apply(this,arguments)}finally{if(btn)btn.classList.remove('lv-busy')}
+    };
+  };
+  ['gFill','gFixPosters','gAnalyse','gAiPoster','renameInline','gGemini','gClaude','deleteAllScripts','downloadLua'].forEach(wrap);
+})();
+</script>
+</body>
+</html>
